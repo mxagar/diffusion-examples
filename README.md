@@ -19,7 +19,7 @@ In the following, I provide a recipe to set up a [conda](https://docs.conda.io/e
 conda env create -f conda.yaml
 conda activate genai
 
-# If you have CUDA, install CUDA support with the propper CUDA version, e.g. v12.1
+# If you have CUDA, install CUDA support with the propper CUDA version, e.g. v12.1 (doesn't need to match 13.0)
 pip install torch torchvision torchaudio torchtext --index-url https://download.pytorch.org/whl/cu121
 # OTHERWISE, install CPU version -- BUT many examples won't work!
 pip install torch torchvision torchaudio torchtext
