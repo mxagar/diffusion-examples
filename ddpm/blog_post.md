@@ -30,3 +30,15 @@ Concepts to explain:
 - Main image generation meythods: VAEs, GANs, Diffusion
 - The impossible triangle: coverage, quality, speed
 
+
+![Discriminative vs. Generative Models](../assets/discriminative_vs_generative.png)
+
+
+![VAEs and GANs](../assets/vae_and_gan.png)
+
+![Denoising Diffusion](../assets/diffusion_idea.png)
+
+![Impossible Triangle](../assets/impossible_triangle.png)
+
+![Denoising UNet](../assets/denoising_unet.png)
+
