@@ -79,14 +79,37 @@ Latent spaces are compressed vector spaces that capture the semantics of the vec
 As a result, given a text-image multi-modal model, we can ask it about something on an image.
 Notable examples are [GPT4-Vision](https://openai.com/research/gpt-4v-system-card) and [LLaVA](https://huggingface.co/spaces/badayvedat/LLaVA)
 
-## Types of Generation Models
+> Discriminative models learn to predict concrete values of a data sample (e.g., a class or a value), whereas generative models learn the data distribution and are able to sample it.
+> Additionally, this sampling can often be conditioned by a prompt.
+
+## Types of Image Generation Models
+
+
 
 ![VAEs and GANs](../assets/vae_and_gan.png)
 
 ![Denoising Diffusion](../assets/diffusion_idea.png)
 
+
+
+<div style="height: 20px;"></div>
+<p align="center">── ◆ ──</p>
+<div style="height: 20px;"></div>
+
+So which of these models should we use? To answer that question, be need to consider that generative models are be evaluated in terms of [three competing properties, which lead to a so-called generative learning trilemma](https://arxiv.org/pdf/2112.07804):
+
+- **Coverage**: how multimodal (from mode/peak, not modality) are the distributions they capture, i.e., several dog breeds; the higher the coverage, the more diverse is the output.
+- **Quality**: if the distributions of the generated images and real images are close, the quality is good. Pretrained CNNs are used to create image embeddings, creating distributions. Then, the difference between the distributions is measured with the Wasserstein distance metric. That's called the *Fréchet inception distance (FID)*.
+- **Speed**: sampling speed, i.e., how fast we can create new images.
+
 ![Impossible Triangle](../assets/impossible_triangle.png)
 
+Generative learning trilemma: sample diversity coverage, generation quality and generation speed are competing properties of generative methods &mdash; or is [Stable Diffusion](#) the solution to that trilemma?
+Image reproduced by the author, but based on the work by [Xiao et al., 2022](https://arxiv.org/pdf/2112.07804).
+
+However, [Stable Diffusion](#)
+
+In the next section, I will go deeper into the topic of **diffusion models** and will introduce how Stable Diffusion works.
 
 ## Denoising Diffusion
 
