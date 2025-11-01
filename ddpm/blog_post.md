@@ -84,9 +84,9 @@ Notable examples are [GPT4-Vision](https://openai.com/research/gpt-4v-system-car
 > Discriminative models learn to predict concrete values of a data sample (e.g., a class or a value), whereas generative models learn the data distribution and are able to sample it.
 > Additionally, this sampling can often be conditioned by a prompt.
 
-## Types of Image Generation Models
+## Types of Image Generation Approaches
 
-There are three main families of generative models for image generation:
+There are three main families of generative approaches for image generation:
 
 - Variational Autoencoders (VAEs)
 - Generative Adversarial Networks (GANs)
@@ -155,7 +155,7 @@ However, [Stable Diffusion](https://arxiv.org/abs/2112.10752) [Stable Diffusion 
 
 In the next section, I will go deeper into the topic of **denoising diffusion models** and will introduce how **Stable Diffusion** works.
 
-## Deep Dive in Denoising Diffusion
+## Deep Dive into Denoising Diffusion
 
 Now, let's go deeper into the 
 
