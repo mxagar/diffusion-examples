@@ -116,30 +116,50 @@ GANs are notoriously difficult to train, [because of several factors](#) out of 
 
 Variational Autoencoders (VAEs, left) and Generative Adversarial Networks (GANs, right) were the most popular generative models up until the advent of Diffusers in the past years. VAEs learn to compress and decompress inputs with an *encoder-decoder* architecture which produces a *latent* space with the compressed samples. GANs learn to produce realistic samples adversarialy: they generate fake samples (with the *generator*) and try to fool a binary classifier (the *discriminator*) which needs to differentiate between real and fake samples. 
 
-Finally, we arrive at the [**Denoising Diffusion Probabilistic Models (Diffusers)**](#).
+Finally, we arrive at the [**Denoising Diffusion Probabilistic Models (Diffusers)**](https://arxiv.org/abs/2006.11239), presented by Ho et al. in 2020.
+In few years they have outperformed GANs for image generation and have become the standard method for the task. The core idea is that we train a model which takes
+
+- a noisy image $x_t$ (in the beggining it will be a pure random noise map)
+- and an associated noise variance $\beta_t$ (in the beginning it will be a high variance value)
+
+and it predicts the noise map $\epsilon_t$ overlaid on the image, so that we can substract it to from the noisy image get the noise-free image $x_0$.
+The process is performed in small, gradual steps, and following a noise rate schedule which decreases the value of $\beta_t$.
+
+As we can see in the figure below, two iterative phases are distinguished, which consist each of them in $T$ steps:
+
+1. **Forward diffusion, used during training** &mdash; Starting with a real clean image $x_0$, we add a noise map $\epsilon$ to it, generated from a variance value $\beta$. Then, we pass the noisy image through a *UNet* model, which should predict the added noise map $\epsilon$. The error is backpropagated to update the weights. The image at step $t$ does not only contain the noise added in the previous step, but also the noise accumulated from prior steps. The forward process is done gradually in around $T = 1000$ steps, in which the noise is added following a cosine schedule.
+2. **Reverse diffusion, used during inference** &mdash; We perform the inference starting with a pure, random noise map. In each step, we pass the noisy image through the *UNet* to predict the step noise map $\epsilon_t$, substract it to the image $x_t$ and obtain the next, less noisy image $x_{t-1}$. The process is repeated for around $T in [20,100]$ steps, until we geat a clear new image $x_0$.
 
 ![Denoising Diffusion](../assets/diffusion_idea.png)
 
+In denoising diffusion models a UNet encoder-decoder model is trained to predict the noise in an image. To that end, during training (forward diffusion), noise is gradually added to an image and we query the model to predict the noise map. During inference (reverse diffusion), we start with a pure noise map and query the model to remove the noise step by step &mdash; until we get a clean new image!
+
+<div style="height: 20px;"></div>
+<p align="center">── ◆ ──</p>
+<div style="height: 20px;"></div>
+
+So which of these approaches should we use?
+
+To answer that question, we need to consider that generative models are usually evaluated in terms of [three competing properties, which lead to a so-called generative learning trilemma](https://arxiv.org/pdf/2112.07804):
+
+- **Quality**: if the distributions of the generated images and real images are close, the quality is considered good. In practice, pretrained CNNs can be used to create image embeddings, leading to vector distributions. Then, the difference between the distributions is measured with the [Wasserstein distance metric](https://en.wikipedia.org/wiki/Wasserstein_metric). GANs and Diffusers have a particularly good quality, whereas VAEs have often a lesser one.
+- **Coverage**: this measures how diverse the captured distributions are, i.e., the number of modi or peaks we have in the vector spaces; for instance, in a dataset of dog images, we would expect as many dog breeds as possible, which would be represented as many dense regions differentiable from each other. VAEs and Diffusers have good coverage, whereas GANs tend to deliver less diverse results.
+- **Speed**: this refers to the sampling speed, i.e., how fast we can create new images. GANs and VAEs are the fastest approaches, while Diffusers require longer computation times.
+
+![Impossible Triangle](../assets/impossible_triangle.png)
+
+Generative learning trilemma: sample diversity coverage, generation quality and generation speed are competing properties of generative methods &mdash; or is [Stable Diffusion](#) the solution to that trilemma?
+Image reproduced by the author, but based on the work by [Xiao et al., 2022](https://arxiv.org/pdf/2112.07804).
+
+However, [Stable Diffusion](https://arxiv.org/abs/2112.10752) [Stable Diffusion XL](https://arxiv.org/abs/2307.01952)
+
+In the next section, I will go deeper into the topic of **denoising diffusion models** and will introduce how **Stable Diffusion** works.
+
+## Deep Dive in Denoising Diffusion
+
+Now, let's go deeper into the 
+
 <!--
-Diffusion models outperform the previous GAN models for image generation.
-
-The core idea is that we train a model which takes
-
-    a noisy image x_t (in the beggining it will be a pure random noise map)
-    and an associated noise variance b_t (in the beginning it will be a high variance value)
-
-and it predicts the noise map e_t overlaid on the image, so that we can substract it to from the noisy image get the noise-free image x_0.
-
-The process is performed in small, gradual steps, and following a noise rate schedule.
-
-We can differentiate these operation phases:
-
-    During training, the original image is modified before passing it to the model: we add a noise map related to a variance value to the image and pass the image to a U-Net model which tries to predict the added noise map; the error is backpropagated, so that the model parametrizes the noise contained in an image. This is done gradually in around T = 1000 steps in which the noise is added following a cosine schedule. The process of gradually adding noise is called forward diffusion.
-    During inference, the U-Net is used to predict the noise map, starting from a random noise map. In around T = 20-100 steps, the noise map is predicted and substracted from the image, feeding the new image (with less noise) to the U-Net again to predict the next noise step. The process of gradually removing noise is called reverse diffusion or denoising.
-        It is possible to interpolate between latent Gaussian noise maps, i.e., first, we blend one noise map into another in n steps using a sinusoidan function; then, for blended noise map of a step we run the reverse diffusion function, i.e., the denoising. The result is that the final images interpolate accordingly (also progressively) from one to the other.
-
-We can see that in any operation phase (training, inference) the number of forward passes is linear with the steps taken for adding noise or denoising.
-
 Some corollary notes on training and inference:
 
     In the forward diffusion process (traning of the U-Net), the noise map (e_t, epsilon) is computed from the variance scalar (b_t, beta) and added to the image to obtain a noisy image x_t. Then, the noisy image is passed to the U-Net. The U-Net tries to guess the noise map, and the prediction error is used to update the weights via backpropagation.
@@ -204,33 +224,6 @@ The U-Net noise model has the following properties:
 
 -->
 
-
-<div style="height: 20px;"></div>
-<p align="center">── ◆ ──</p>
-<div style="height: 20px;"></div>
-
-So which of these models should we use?
-
-To answer that question, we need to consider that generative models are usually evaluated in terms of [three competing properties, which lead to a so-called generative learning trilemma](https://arxiv.org/pdf/2112.07804):
-
-- **Quality**: if the distributions of the generated images and real images are close, the quality is considered good. In practice, pretrained CNNs can be used to create image embeddings, leading to vector distributions. Then, the difference between the distributions is measured with the [Wasserstein distance metric](https://en.wikipedia.org/wiki/Wasserstein_metric). GANs and Diffusers have a particularly good quality, whereas VAEs have often a lesser one.
-- **Coverage**: this measures how diverse the captured distributions are, i.e., the number of modi or peaks we have in the vector spaces; for instance, in a dataset of dog images, we would expect as many dog breeds as possible, which would be represented as many dense regions differentiable from each other. VAEs and Diffusers have good coverage, whereas GANs tend to deliver less diverse results.
-- **Speed**: this refers to the sampling speed, i.e., how fast we can create new images. GANs and VAEs are the fastest approaches, while Diffusers require longer computation times.
-
-![Impossible Triangle](../assets/impossible_triangle.png)
-
-Generative learning trilemma: sample diversity coverage, generation quality and generation speed are competing properties of generative methods &mdash; or is [Stable Diffusion](#) the solution to that trilemma?
-Image reproduced by the author, but based on the work by [Xiao et al., 2022](https://arxiv.org/pdf/2112.07804).
-
-However, [Stable Diffusion](#)
-
-In the next section, I will go deeper into the topic of **denoising diffusion models** and will introduce how **Stable Diffusion** works.
-
-## Deep Dive in Denoising Diffusion
-
-
-
-
 ![Denoising UNet](../assets/denoising_unet.png)
 
 <div style="height: 20px;"></div>
@@ -238,7 +231,9 @@ In the next section, I will go deeper into the topic of **denoising diffusion mo
 <div style="height: 20px;"></div>
 
 
-Stable Diffusion
+[Stable Diffusion](https://arxiv.org/abs/2112.10752) Rombach et al. 2021
+
+[Stable Diffusion XL](https://arxiv.org/abs/2307.01952) Podell et al. 2023
 
 ## Conclusions
 
