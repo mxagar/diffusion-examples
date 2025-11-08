@@ -42,9 +42,11 @@ In machine learning, any sample or data point/instance can be represented as a v
 These features could be the RGB values of the pixels of an image or the words (tokens) of a text represented as an index of a vocabulary.
 In deep learning, these vectors are often transformed into *embeddings* or *latent* vectors, which are compressed representations that still contain a differentiable meaning.
 
-![Image and Text Embeddings](../assets/embeddings.png)
-
-Any sample or data point of any modality can represented as an n-dimensional vector $x$ in machine learning; in the figure, images and words (tokens) are represented as 2D vector embeddings. These embeddings contain conceptual information in a compressed form. When semantics and/or similarities between samples are captured, algebraic operations can be used with the vectors, resulting in coherent, logical outputs. Image by the author.
+<p align="center">
+<img src="../assets/embeddings.png" alt="Image and Text Embeddings" width="1000"/>
+<small style="color:grey">Any sample or data point of any modality can represented as an n-dimensional vector $x$ in machine learning; in the figure, images and words (tokens) are represented as 2D vector embeddings. These embeddings contain conceptual information in a compressed form. When semantics and/or similarities between samples are captured, algebraic operations can be used with the vectors, resulting in coherent, logical outputs. Image by the author.
+</small>
+</p>
 
 Up until recently, mainly **discriminative models** have been used, which predict properties of those embeddings.
 These models are trained with annotated data, for instance, the classes the samples belong to: $x$ is of class $y = $ *cat* or *dog*.
@@ -57,12 +59,14 @@ These do not capture decision boundaries explicitly, instead, they learn the pro
 Therefore, they can sample in those distributions and generate new unseen examples.
 Following the same mathematical notation, we can say that the models learn $p(x)$ or $p(x, y)$, if the classes are considered.
 
-![Discriminative vs. Generative Models](../assets/discriminative_vs_generative.png)
-
-A dataset of 2D samples $x$ (i.e., 2 features) used to fit a discriminative and a generative model.
+<p align="center">
+<img src="../assets/discriminative_vs_generative.png" alt="Discriminative vs. Generative Models" width="1000"/>
+<small style="color:grey">A dataset of 2D samples $x$ (i.e., 2 features) used to fit a discriminative and a generative model.
 Discriminative models learn decision boundaries and are able to predict the class $y$ of new, unseen instance.
 Generative models learn the data distribution $p(x)$ and are able to sample new unseen instances.
 Image by the author.
+</small>
+</p>
 
 In terms of *ease of control*, generative models can be of two main types:
 
@@ -112,11 +116,13 @@ Once the model is trained, the inference is done with the generator $G$ alone.
 
 GANs are notoriously difficult to train, [because of several factors](#) out of the scope of this blog post. Fortunately, [guidelines](#) which aid the training process have been proposed. Also, method improvements have been presented, such as the [Wasserstein GAN with Gradient Penalty](#), which alleviates the major training difficulties, and [conditional GANs](#), which provide control to the user during generation (e.g., create male or female faces).
 
-![VAEs and GANs](../assets/vae_and_gan.png)
+<p align="center">
+<img src="../assets/vae_and_gan.png" alt="VAEs and GANs" width="1000"/>
+<small style="color:grey">Variational Autoencoders (VAEs, left) and Generative Adversarial Networks (GANs, right) were the most popular generative models up until the advent of Diffusers in the past years. VAEs learn to compress and decompress inputs with an *encoder-decoder* architecture which produces a *latent* space with the compressed samples. GANs learn to produce realistic samples adversarialy: they generate fake samples (with the *generator*) and try to fool a binary classifier (the *discriminator*) which needs to differentiate between real and fake samples.
+</small>
+</p>
 
-Variational Autoencoders (VAEs, left) and Generative Adversarial Networks (GANs, right) were the most popular generative models up until the advent of Diffusers in the past years. VAEs learn to compress and decompress inputs with an *encoder-decoder* architecture which produces a *latent* space with the compressed samples. GANs learn to produce realistic samples adversarialy: they generate fake samples (with the *generator*) and try to fool a binary classifier (the *discriminator*) which needs to differentiate between real and fake samples. 
-
-Finally, we arrive at the [**Denoising Diffusion Probabilistic Models (Diffusers)**](https://arxiv.org/abs/2006.11239), presented by Ho et al. in 2020.
+Finally, we arrive at the [**Denoising Diffusion Probabilistic Models (Ho et al., 2020)**](https://arxiv.org/abs/2006.11239), presented by Ho et al. in 2020.
 In few years they have outperformed GANs for image generation and have become the standard method for the task. The core idea is that we train a model which takes
 
 - a noisy image $x_t$ (in the beggining it will be a pure random noise map)
@@ -127,12 +133,14 @@ The process is performed in small, gradual steps, and following a noise rate sch
 
 As we can see in the figure below, two iterative phases are distinguished, which consist each of them in $T$ steps:
 
-1. **Forward diffusion, used during training** &mdash; Starting with a real clean image $x_0$, we add a noise map $\epsilon$ to it, generated from a variance value $\beta$. Then, we pass the noisy image through a *UNet* model, which should predict the added noise map $\epsilon$. The error is backpropagated to update the weights. The image at step $t$ does not only contain the noise added in the previous step, but also the noise accumulated from prior steps. The forward process is done gradually in around $T = 1000$ steps, in which the noise is added following a cosine schedule.
-2. **Reverse diffusion, used during inference** &mdash; We perform the inference starting with a pure, random noise map. In each step, we pass the noisy image through the *UNet* to predict the step noise map $\epsilon_t$, substract it to the image $x_t$ and obtain the next, less noisy image $x_{t-1}$. The process is repeated for around $T in [20,100]$ steps, until we geat a clear new image $x_0$.
+1. **Forward diffusion, used during training** &mdash; Starting with a real clean image $x_0$, we add a noise map $\epsilon$ to it, generated from a variance value $\beta$. Then, we pass the noisy image through a *UNet* model, which should predict the added noise map $\epsilon$. The error is backpropagated to update the weights. The image at step $t$ does not only contain the noise added in the previous step, but also the noise accumulated from prior steps. The forward process is done gradually in around $T = 1000$ steps, in which the noise is added following a cosine-shaped rate function.
+2. **Reverse diffusion, used during inference** &mdash; We perform the inference starting with a pure, random noise map. In each step, we pass the noisy image through the *UNet* to predict the step noise map $\epsilon_t$, substract it to the image $x_t$ and obtain the next, less noisy image $x_{t-1}$. The process is repeated for around $T \in [20,100]$ steps, until we geat a clear new image $x_0$.
 
-![Denoising Diffusion](../assets/diffusion_idea.png)
-
-In denoising diffusion models a UNet encoder-decoder model is trained to predict the noise in an image. To that end, during training (forward diffusion), noise is gradually added to an image and we query the model to predict the noise map. During inference (reverse diffusion), we start with a pure noise map and query the model to remove the noise step by step &mdash; until we get a clean new image!
+<p align="center">
+<img src="../assets/diffusion_idea.png" alt="Denoising Diffusion" width="1000"/>
+<small style="color:grey">In denoising diffusion models a *UNet* encoder-decoder model is trained to predict the noise in an image. To that end, during training (forward diffusion), noise is gradually added to an image and we query the model to predict the noise map. During inference (reverse diffusion), we start with a pure noise map and query the model to remove the noise step by step &mdash; until we get a clean new image!
+</small>
+</p>
 
 <div style="height: 20px;"></div>
 <p align="center">── ◆ ──</p>
@@ -140,24 +148,32 @@ In denoising diffusion models a UNet encoder-decoder model is trained to predict
 
 So which of these approaches should we use?
 
-To answer that question, we need to consider that generative models are usually evaluated in terms of [three competing properties, which lead to a so-called generative learning trilemma](https://arxiv.org/pdf/2112.07804):
+To answer that question, we need to consider that generative models are usually evaluated in terms of [three competing properties, which lead to a so-called generative learning trilemma (Xiao et al., 2022)](https://arxiv.org/pdf/2112.07804):
 
 - **Quality**: if the distributions of the generated images and real images are close, the quality is considered good. In practice, pretrained CNNs can be used to create image embeddings, leading to vector distributions. Then, the difference between the distributions is measured with the [Wasserstein distance metric](https://en.wikipedia.org/wiki/Wasserstein_metric). GANs and Diffusers have a particularly good quality, whereas VAEs have often a lesser one.
 - **Coverage**: this measures how diverse the captured distributions are, i.e., the number of modi or peaks we have in the vector spaces; for instance, in a dataset of dog images, we would expect as many dog breeds as possible, which would be represented as many dense regions differentiable from each other. VAEs and Diffusers have good coverage, whereas GANs tend to deliver less diverse results.
 - **Speed**: this refers to the sampling speed, i.e., how fast we can create new images. GANs and VAEs are the fastest approaches, while Diffusers require longer computation times.
 
-![Impossible Triangle](../assets/impossible_triangle.png)
+As we can see, there seems to be no allmighty method that wins in all three metrics. However, [Rombach et al. (2021)](https://arxiv.org/abs/2112.10752) and [Podell et al. ( 2023)](https://arxiv.org/abs/2307.01952) presented and improved the **Stable Diffusion** approach, which is a very good trade-off (argueably the best, so far). This method applies diffusion, but in the latent space, achieving much faster speed values &mdash; I explain more about it in the next section.
 
-Generative learning trilemma: sample diversity coverage, generation quality and generation speed are competing properties of generative methods &mdash; or is [Stable Diffusion](#) the solution to that trilemma?
-Image reproduced by the author, but based on the work by [Xiao et al., 2022](https://arxiv.org/pdf/2112.07804).
+<p align="center">
+<img src="../assets/impossible_triangle.png" alt="Impossible Triangle" width="1000"/>
+<small style="color:grey">Generative learning trilemma: sample diversity coverage, generation quality and generation speed are competing properties of generative methods &mdash; or is <a href="https://arxiv.org/abs/2307.01952">Stable Diffusion</a> the solution to that trilemma?
+Image reproduced by the author, but based on the work by <a href="https://arxiv.org/pdf/2112.07804">Xiao et al., 2022</a>.
+</small>
+</p>
 
-However, [Stable Diffusion](https://arxiv.org/abs/2112.10752) [Stable Diffusion XL](https://arxiv.org/abs/2307.01952)
 
-In the next section, I will go deeper into the topic of **denoising diffusion models** and will introduce how **Stable Diffusion** works.
+## Deep Dive into Denoising Diffusion: Implementation, Conditioning, and Latent Diffusion
 
-## Deep Dive into Denoising Diffusion
+Now, let's go deeper into the the topic of [**Denoising Diffusion Probabilistic Models (Ho et al., 2020)**](https://arxiv.org/abs/2006.11239).
 
-Now, let's go deeper into the 
+Additional points:
+
+- We need small steps in the reverse phase: it's much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
+
+
+
 
 <!--
 Some corollary notes on training and inference:
@@ -230,10 +246,41 @@ The U-Net noise model has the following properties:
 <p align="center">── ◆ ──</p>
 <div style="height: 20px;"></div>
 
+If we fit the model to a dataset of car images, we will be able to generate random car images. But what if we would like to control the type of cars we would like to obtain, for instance, *red sports cars*? That can be achieved with **conditioning**.
 
-[Stable Diffusion](https://arxiv.org/abs/2112.10752) Rombach et al. 2021
+The most common **conditioning** is done with *text*: we provide a prompt/description of the image we want to obtain. As a first step, that text is converted into an embedding vector using a text encoder trained previously with both images and their descriptions (e.g., [CLIP (Radford et al., 2021)](https://arxiv.org/abs/2103.00020)). Then, the resulting vector is provided to the *UNet* at several stages:
 
-[Stable Diffusion XL](https://arxiv.org/abs/2307.01952) Podell et al. 2023
+- During *training*, we inject the embedding vector in different layers of the *UNet* using cross attention, reinforcing the the conditioning. Additionally, we remove the text conditioning in some random steps so that the model learns unconditional generation.
+- During *inference*, the *UNet* produces the noise map $\epsilon$ with and without text conditioning: $\epsilon_{\textrm{cond}}, \epsilon_{\textrm{uncond}}$. The difference added by the conditioned noise map is aplified (by a factor $\lambda$) to push the final in the direction of conditioning; mathematically, considering $\epsilon$ is a vector/tensor, this is expressed (and implemented) as follows:
+
+  $\epsilon_{\textrm{final}} = \epsilon_{\textrm{uncond}} + \lambda *(\epsilon_{\textrm{cond}} - \epsilon_{\textrm{uncond}})$
+
+Thanks to these modifications, we are able to obtain our red sports car instead of a green truck.
+
+<div style="height: 20px;"></div>
+<p align="center">── ◆ ──</p>
+<div style="height: 20px;"></div>
+
+Finally, let's consider two aspects of diffusion models as explained so far:
+
+- Many forward passes are needed to generate our noise-free image.
+- Denoising occurs in pixel-space, which has a relatively large dimensionality.
+
+What if we could apply forward/reverse diffusion in a smaller space, to accelerate the processing? That is exactly what is achieved by [Rombach et al. (2021)](https://arxiv.org/abs/2112.10752) and [Podell et al. ( 2023)](https://arxiv.org/abs/2307.01952), who presented and improved a **latent diffusion** method also known as **Stable Diffusion**. In essence, latent diffision models are diffusion models wrapped by autoencoders:
+
+- The encoder creates a latent vector.
+- In the forward diffusion phase, we add noise to the vector and learn to denoise it.
+- In the reverse diffusion phase we remove the noise with the trained *UNet*.
+- Then, finally, the decoder expands the denoised latent vector to get the image.
+
+Working in the latent space is much faster, because the sizes of the manipulated vectors are much smaller (around 16 times smaller, compared to images); thus, we also require also smaller models.
+
+Stable Diffusion is one of the most popular latent diffusion models; due to the [latest the advances](https://stability.ai/news/stability-ai-sdxl-turbo) of the team behind it, it has become one of the best in
+
+- Ease of conditioning
+- Quality of output
+- Diverstity
+- ... and speed!
 
 ## Conclusions
 
