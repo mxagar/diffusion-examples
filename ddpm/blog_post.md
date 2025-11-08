@@ -173,9 +173,12 @@ Additional points:
 - We need small steps in the reverse phase: it's much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
 
 
-$x_t = q(x_t | x_{t-1}) = \sqrt{1-\beta_t} * x_{t-1} + \sqrt{\beta_t} * \epsilon_{t-1}$
+$x_t = q(x_t | x_{t-1}) = x_{t-1}\sqrt{1-\beta_t} + \epsilon_{t-1}\sqrt{\beta_t}$
 
-$x_t = q(x_t | x_0) = \sqrt{\bar{\alpha_t}} * x_0 + \sqrt{1 - \bar{\alpha_t}} * \epsilon_t$
+$\epsilon \sim N(\mathbf{0},\mathbf{I})$
+
+$x_t = q(x_t | x_{t-1}) = N(x_{t-1}\sqrt{1-\beta_t}, \beta_t\mathbf{I})
+$
 
 Reparametrization:
 
@@ -183,9 +186,25 @@ $\alpha_t = 1 - \beta_t$
 
 $\bar{\alpha_t} = \prod_{i=0}^{t}{\alpha_i}$
 
+
+$x_t = q(x_t | x_0) = x_0\sqrt{\bar{\alpha_t}} + \epsilon_t\sqrt{1 - \bar{\alpha_t}} = N(x_0\sqrt{\bar{\alpha}_t}, (1-\bar{\alpha}_t)\mathbf{I})$
+
+
 Reverse diffusion:
 
-$x_{t-1} = p(x_{t-1} | x_t) = f(\bar{\alpha_t}, x_t)$
+$x_{T} \sim N(\mathbf{0},\mathbf{I})$
+
+$\epsilon_{\theta}(x_t, \beta_t)$
+
+$x_{t-1} = p(x_{t-1} | x_t) = f(\alpha_t, x_t) = \frac{1}{\sqrt{\alpha_t}} (x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha_t}}}\epsilon_{\theta}) + \sigma_t z$
+
+
+Here:
+
+- $\epsilon_{\theta}$
+- $\sigma_t$
+- $z \sim N(\mathbf{0},\mathbf{I})$
+
 
 <!--
 Some corollary notes on training and inference:
