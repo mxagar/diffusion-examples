@@ -173,7 +173,19 @@ Additional points:
 - We need small steps in the reverse phase: it's much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
 
 
+$x_t = q(x_t | x_{t-1}) = \sqrt{1-\beta_t} * x_{t-1} + \sqrt{\beta_t} * \epsilon_{t-1}$
 
+$x_t = q(x_t | x_0) = \sqrt{\bar{\alpha_t}} * x_0 + \sqrt{1 - \bar{\alpha_t}} * \epsilon_t$
+
+Reparametrization:
+
+$\alpha_t = 1 - \beta_t$
+
+$\bar{\alpha_t} = \prod_{i=0}^{t}{\alpha_i}$
+
+Reverse diffusion:
+
+$x_{t-1} = p(x_{t-1} | x_t) = f(\bar{\alpha_t}, x_t)$
 
 <!--
 Some corollary notes on training and inference:
