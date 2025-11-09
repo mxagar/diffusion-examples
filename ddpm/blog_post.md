@@ -196,7 +196,7 @@ In the particular case of the denoising *U-Net*, we have these two *inputs*:
 On the other hand, the *output* or the model is the noise map at step $t$: $\epsilon_{\theta, t}$. If we subtract $\epsilon_{\theta, t}$ to the noisy image $x_t$ we should obtain the noise-free image $x_0$. However, obviously, that works better if done progressively.
 
 <p align="center">
-<img src="../assets/denoising_UNet.png" alt="Denoising U-Net" width="1000"/>
+<img src="../assets/denoising_unet.png" alt="Denoising U-Net" width="1000"/>
 <small style="color:grey">
 Denoising <i>U-Net</i>.
 Image reproduced by the author, but based on the book <a href="https://www.oreilly.com/library/view/generative-deep-learning/9781098134174/">Generative Deep Learning (O'Reilly)</a> by David Foster.
@@ -267,10 +267,7 @@ The term $\sigma_t z$ is an experimentally added component which gives control o
 - we add more freedom to explore in the beginning allowing for a broader variation of pictures (more random noise), 
 - but then narrow down to the details.
 
-
-<div style="height: 20px;"></div>
-<p align="center">── ◆ ──</p>
-<div style="height: 20px;"></div>
+#### Conditioning
 
 If we fit the model to a dataset of car images, we will be able to generate random car images. But what if we would like to control the type of cars we would like to obtain, for instance, *red sports cars*? That can be achieved with **conditioning**.
 
@@ -283,9 +280,7 @@ The most common **conditioning** is done with *text*: we provide a prompt/descri
 
 Thanks to these modifications, we are able to obtain our red sports car instead of a green truck.
 
-<div style="height: 20px;"></div>
-<p align="center">── ◆ ──</p>
-<div style="height: 20px;"></div>
+#### Stable Diffusion
 
 Finally, let's consider two aspects of diffusion models as explained so far:
 
