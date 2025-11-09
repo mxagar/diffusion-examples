@@ -133,12 +133,12 @@ The process is performed in small, gradual steps, and following a noise rate sch
 
 As we can see in the figure below, two iterative phases are distinguished, which consist each of them in $T$ steps:
 
-1. **Forward diffusion, used during training** &mdash; Starting with a real clean image $x_0$, we add a noise map $\epsilon$ to it, generated from a variance value $\beta$. Then, we pass the noisy image through a *UNet* model, which should predict the added noise map $\epsilon$. The error is backpropagated to update the weights. The image at step $t$ does not only contain the noise added in the previous step, but also the noise accumulated from prior steps. The forward process is done gradually in around $T = 1000$ steps, in which the noise is added following a cosine-shaped rate function.
-2. **Reverse diffusion, used during inference** &mdash; We perform the inference starting with a pure, random noise map. In each step, we pass the noisy image through the *UNet* to predict the step noise map $\epsilon_t$, substract it to the image $x_t$ and obtain the next, less noisy image $x_{t-1}$. The process is repeated for around $T \in [20,100]$ steps, until we geat a clear new image $x_0$.
+1. **Forward diffusion, used during training** &mdash; Starting with a real clean image $x_0$, we add a noise map $\epsilon$ to it, generated from a variance value $\beta$. Then, we pass the noisy image through a *U-Net* model, which should predict the added noise map $\epsilon$. The error is backpropagated to update the weights. The image at step $t$ does not only contain the noise added in the previous step, but also the noise accumulated from prior steps. The forward process is done gradually in around $T = 1000$ steps, in which the noise is added following a cosine-shaped rate function.
+2. **Reverse diffusion, used during inference** &mdash; We perform the inference starting with a pure, random noise map. In each step, we pass the noisy image through the *U-Net* to predict the step noise map $\epsilon_t$, substract it to the image $x_t$ and obtain the next, less noisy image $x_{t-1}$. The process is repeated for around $T \in [20,100]$ steps, until we geat a clear new image $x_0$.
 
 <p align="center">
 <img src="../assets/diffusion_idea.png" alt="Denoising Diffusion" width="1000"/>
-<small style="color:grey">In denoising diffusion models a *UNet* encoder-decoder model is trained to predict the noise in an image. To that end, during training (forward diffusion), noise is gradually added to an image and we query the model to predict the noise map. During inference (reverse diffusion), we start with a pure noise map and query the model to remove the noise step by step &mdash; until we get a clean new image!
+<small style="color:grey">In denoising diffusion models a *U-Net* encoder-decoder model is trained to predict the noise in an image. To that end, during training (forward diffusion), noise is gradually added to an image and we query the model to predict the noise map. During inference (reverse diffusion), we start with a pure noise map and query the model to remove the noise step by step &mdash; until we get a clean new image!
 </small>
 </p>
 
@@ -168,17 +168,71 @@ Image reproduced by the author, but based on the work by <a href="https://arxiv.
 
 Now, let's go deeper into the the topic of [**Denoising Diffusion Probabilistic Models (Ho et al., 2020)**](https://arxiv.org/abs/2006.11239).
 
-Additional points:
+I have already introduced the three main components of diffusion models:
 
-- We need small steps in the reverse phase: it's much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
+1. The denoising *U-Net*: a model which learns to extract the noise map of a noisy image.
+2. The *forward diffusion* phase used during *training*, in which we start with a real noise-free image and add step by step noise to it. At each step, we train the *U-Net* to learn how to detect the ground-truth noise we have added to the image.
+3. The *reverse diffusion* phase used during *inference*, in which the we start with a random noise map and remove step by step noise from it using the trained *U-Net*. It is intuitively easy to understand why we need small steps in the reverse phase, too: it is much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
 
+Let's unpack each one of them to better understand how diffusion works.
+
+<div style="height: 20px;"></div>
+<div align="center" style="border: 1px solid #e4f312ff; background-color: #fcd361b9; padding: 1em; border-radius: 6px;">
+<strong>
+Note that this section has a dedicated repository in which all the models and formulae are implemented: <a href="https://github.com/mxagar/diffusion-examples/tree/main/ddpm">github.com/mxagar/diffusion-examples/ddpm</a>.
+</strong>
+</div>
+<div style="height: 30px;"></div>
+
+### Denoising *U-Net*
+
+The [U-Net (Ronneberger et al., 2015)](https://arxiv.org/abs/1505.04597) was originally created for image segmentation tasks (specifically in the medicine domain): the architecture contracts the input image into a latent tensor, which is then expanded using symmetric layers; as a result, the model outputs a map with the same size of the input image (width and height) in which we obtain values for each pixel, e.g., pixel-wise classification or image segmentation.
+
+In the particular case of the denoising *U-Net*, we have these two *inputs*:
+
+- The noisy image $x_t$ at step $t$.
+- The variance scalar $\beta_t$ at step $t$. The variance scalar is expanded to be a vector using sinusoidal embedding. Sinusoidal embeddings are basically a $\mathbf{R} \rightarrow \mathbf{R}^n$ mapping in which for each unique scalar we obtain a unique and different vector, thanks to systematically applying sinusoidal functions to the scalar. It is related to the sinusoidal embedding from the [Transformers paper (Vaswani et al., 2017)](https://arxiv.org/abs/1706.03762).
+
+On the other hand, the *output* or the model is the noise map at step $t$: $\epsilon_{\theta, t}$. If we subtract $\epsilon_{\theta, t}$ to the noisy image $x_t$ we should obtain the noise-free image $x_0$. However, obviously, that works better if done progressively.
+
+<p align="center">
+<img src="../assets/denoising_UNet.png" alt="Denoising U-Net" width="1000"/>
+<small style="color:grey">
+Denoising <i>U-Net</i>.
+Image reproduced by the author, but based on the book <a href="https://www.oreilly.com/library/view/generative-deep-learning/9781098134174/">Generative Deep Learning (O'Reilly)</a> by David Foster.
+</small>
+</p>
+
+As in every *U-Net*, the initial tensor is progressively reduced in spatial size while its channels are increased; then, the reduced vector is expanded to have a bigger spatial size but less channels. The final tensor has the same shape as the input image. The architecture consists of these blocks:
+
+- `ResidualBlock`: basic block used everywhere which performs batch normalization and 2 convolutions, while adding a skip connection between input and output, as presented in the [ResNet architecture (Het et al., 2015)](https://arxiv.org/abs/1512.03385). Residual blocks learn the identity map and allow for deeper network, since the vanishing gradient issue is alleviated.
+- `DownBlock`: two `ResidualBlocks` are used, as well as an average pooling so that the image size is decreased while increasing the number of channels.
+- `UpBlock`: upsampling is applied to the feature map to increase its spatial size and two `ResidualBlocks` are applied so that the channels are decreased.
+- Skip connections: the output of each `ResidualBlock` in a `DownBlock` is passed to the associated `UpBlock` with same tensor size, where the tensors are concatenated.
+
+Often two networks are maintained: the usual one with the weights computed during gradient descend and the *Exponential Moving Average (EMA)* network, which contains the EMA of the weights. The EMA network is not that susceptible to spikes and fluctuations.
+
+### Forward Diffusion
 
 $x_t = q(x_t | x_{t-1}) = x_{t-1}\sqrt{1-\beta_t} + \epsilon_{t-1}\sqrt{\beta_t}$
 
-$\epsilon \sim N(\mathbf{0},\mathbf{I})$
+$\epsilon \sim N(0,I)$
 
-$x_t = q(x_t | x_{t-1}) = N(x_{t-1}\sqrt{1-\beta_t}, \beta_t\mathbf{I})
-$
+$x_t = q(x_t | x_{t-1}) = N(x_{t-1}\sqrt{1-\beta_t}, \beta_t I)$
+
+
+
+The forward diffusion function q adds the required noise between two consecutive noisy images (x_(t-1) -> x_(t)); it is defined as:
+
+x_t = q(x_t | x_(t-1)) = sqrt(1-b_t) * x_(t-1) + sqrt(b_t) * e_(t-1)
+
+where
+
+x: image
+t: step in noise adding schedule
+b, beta: variance
+e, epsilon: Gaussian map with mean 0, standard deviation 1
+
 
 Reparametrization:
 
@@ -187,12 +241,16 @@ $\alpha_t = 1 - \beta_t$
 $\bar{\alpha_t} = \prod_{i=0}^{t}{\alpha_i}$
 
 
-$x_t = q(x_t | x_0) = x_0\sqrt{\bar{\alpha_t}} + \epsilon_t\sqrt{1 - \bar{\alpha_t}} = N(x_0\sqrt{\bar{\alpha}_t}, (1-\bar{\alpha}_t)\mathbf{I})$
+$x_t = q(x_t | x_0) = x_0\sqrt{\bar{\alpha_t}} + \epsilon_t\sqrt{1 - \bar{\alpha_t}} = N(x_0\sqrt{\bar{\alpha}_t}, (1-\bar{\alpha}_t) I)$
+
+
+
+### Reverse Diffusion
 
 
 Reverse diffusion:
 
-$x_{T} \sim N(\mathbf{0},\mathbf{I})$
+$x_{T} \sim N(0,I)$
 
 $\epsilon_{\theta}(x_t, \beta_t)$
 
@@ -203,7 +261,7 @@ Here:
 
 - $\epsilon_{\theta}$
 - $\sigma_t$
-- $z \sim N(\mathbf{0},\mathbf{I})$
+- $z \sim N(0,I)$
 
 
 <!--
@@ -256,22 +314,9 @@ This reverse diffusion function is derived from the reparametrized forward diffu
 
 It's worth mentioning that both the forward and reverse diffusion processes are Gaussian, meaning that the noise added in the forward process and removed in the reverse process is Gaussian. This Gaussian structure allows the formulation of the reverse process based on Bayes' theorem.
 
-The U-Net noise model has the following properties:
-
-    Input: noisy image x_t at step t, as well as variance b_t.
-        The variance scalar is expanded to be a vector using sinusoidal embedding. Sinusoidal embedding is basically a R -> R^n map which for each unique scalar generates a unique and different vector. It is related to the sinusoidal embedding from the Transformers paper, but there it was used to add positional embeddings. Later, in the NeRF paper, sinusoidal embeddings were modified to map scalars to vectors, as done in the diffusion U-Net model.
-        The image and the variance vector are concatenated in the beginning of the network.
-    Output: noise map e_t corresponding to the input; if we substract e_t to the noisy image x_t we should obtain the noise-free image x_0. However, obviously, that works better if done progressively in the reverse diffusion function.
-    As in every U-Net, the initial tensor is progressively reduced in spatial size while its channels are increased; then, the reduced vector is expanded to have a bigger spatial size but less channels. The final tensor has the same shape as the input image. The architecture consists of these blocks:
-        ResidualBlock: basic block used everywhere which performs batch normalization and 2 convolutions, while adding a skip connection between input and output, as presented in the ResNet architecture. Residual blocks learn the identity map and allow for deeper network, since the vanishing gradient issue is alleviated.
-        DownBlock: two ResidualBlocks are used and an average pooling so that the image size is decreased and the channels are increased.
-        UpBlock: upsampling is applied to the image to increase its spatial size and two ResidualBlocks are applied so that the channels are decreased.
-        Skip connections: the ouput of each ResidualBlocks in a DownBlock is passed to the associated UpBlock with same tensor size, where the tensors are concatenated.
-    Two networks are maintained: the usual one with the weights computed during gradient descend and the Exponential Moving Average (EMA) network, which contains the EMA of the weights. The EMA network is not that susceptible to spikes and fluctuations.
-
 -->
 
-![Denoising UNet](../assets/denoising_unet.png)
+
 
 <div style="height: 20px;"></div>
 <p align="center">── ◆ ──</p>
@@ -279,10 +324,10 @@ The U-Net noise model has the following properties:
 
 If we fit the model to a dataset of car images, we will be able to generate random car images. But what if we would like to control the type of cars we would like to obtain, for instance, *red sports cars*? That can be achieved with **conditioning**.
 
-The most common **conditioning** is done with *text*: we provide a prompt/description of the image we want to obtain. As a first step, that text is converted into an embedding vector using a text encoder trained previously with both images and their descriptions (e.g., [CLIP (Radford et al., 2021)](https://arxiv.org/abs/2103.00020)). Then, the resulting vector is provided to the *UNet* at several stages:
+The most common **conditioning** is done with *text*: we provide a prompt/description of the image we want to obtain. As a first step, that text is converted into an embedding vector using a text encoder trained previously with both images and their descriptions (e.g., [CLIP (Radford et al., 2021)](https://arxiv.org/abs/2103.00020)). Then, the resulting vector is provided to the *U-Net* at several stages:
 
-- During *training*, we inject the embedding vector in different layers of the *UNet* using cross attention, reinforcing the the conditioning. Additionally, we remove the text conditioning in some random steps so that the model learns unconditional generation.
-- During *inference*, the *UNet* produces the noise map $\epsilon$ with and without text conditioning: $\epsilon_{\textrm{cond}}, \epsilon_{\textrm{uncond}}$. The difference added by the conditioned noise map is aplified (by a factor $\lambda$) to push the final in the direction of conditioning; mathematically, considering $\epsilon$ is a vector/tensor, this is expressed (and implemented) as follows:
+- During *training*, we inject the embedding vector in different layers of the *U-Net* using cross attention, reinforcing the the conditioning. Additionally, we remove the text conditioning in some random steps so that the model learns unconditional generation.
+- During *inference*, the *U-Net* produces the noise map $\epsilon$ with and without text conditioning: $\epsilon_{\textrm{cond}}, \epsilon_{\textrm{uncond}}$. The difference added by the conditioned noise map is aplified (by a factor $\lambda$) to push the final in the direction of conditioning; mathematically, considering $\epsilon$ is a vector/tensor, this is expressed (and implemented) as follows:
 
   $\epsilon_{\textrm{final}} = \epsilon_{\textrm{uncond}} + \lambda *(\epsilon_{\textrm{cond}} - \epsilon_{\textrm{uncond}})$
 
@@ -301,7 +346,7 @@ What if we could apply forward/reverse diffusion in a smaller space, to accelera
 
 - The encoder creates a latent vector.
 - In the forward diffusion phase, we add noise to the vector and learn to denoise it.
-- In the reverse diffusion phase we remove the noise with the trained *UNet*.
+- In the reverse diffusion phase we remove the noise with the trained *U-Net*.
 - Then, finally, the decoder expands the denoised latent vector to get the image.
 
 Working in the latent space is much faster, because the sizes of the manipulated vectors are much smaller (around 16 times smaller, compared to images); thus, we also require also smaller models.
