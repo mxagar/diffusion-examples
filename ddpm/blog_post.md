@@ -170,9 +170,9 @@ Now, let's go deeper into the the topic of [**Denoising Diffusion Probabilistic 
 
 I have already introduced the three main components of diffusion models:
 
-1. The denoising *U-Net*: a model which learns to extract the noise map of a noisy image.
-2. The *forward diffusion* phase used during *training*, in which we start with a real noise-free image and add step by step noise to it. At each step, we train the *U-Net* to learn how to detect the ground-truth noise we have added to the image.
-3. The *reverse diffusion* phase used during *inference*, in which the we start with a random noise map and remove step by step noise from it using the trained *U-Net*. It is intuitively easy to understand why we need small steps in the reverse phase, too: it is much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
+1. The denoising *U-Net*: a model which learns to extract the noise map $\epsilon_t$ of a noisy image $x_t$.
+2. The *forward diffusion* phase used during *training*, in which we start with a real noise-free image $x_0$ and add step by step noise $\epsilon$ to it. At each step $t$, we train the *U-Net* to learn how to predict the approximation $\epsilon_{\theta, t}$ of the ground-truth noise $\epsilon_t$ we have added to the image: $\epsilon_{\theta, t} \approx \epsilon_t$.
+3. The *reverse diffusion* phase used during *inference*, in which the we start with a random noise map $x_{T}$ and remove step by step noise $\epsilon_{\theta}$ from it using the trained *U-Net*. It is intuitively easy to understand why we need small steps in the reverse phase, too: it is much easier to improve an image with slight noise than to reconstruct a clear image from pure randomness.
 
 Let's unpack each one of them to better understand how diffusion works.
 
@@ -184,7 +184,7 @@ Note that this section has a dedicated repository in which all the models and fo
 </div>
 <div style="height: 30px;"></div>
 
-### Denoising *U-Net*
+#### Denoising *U-Net*
 
 The [U-Net (Ronneberger et al., 2015)](https://arxiv.org/abs/1505.04597) was originally created for image segmentation tasks (specifically in the medicine domain): the architecture contracts the input image into a latent tensor, which is then expanded using symmetric layers; as a result, the model outputs a map with the same size of the input image (width and height) in which we obtain values for each pixel, e.g., pixel-wise classification or image segmentation.
 
@@ -212,110 +212,60 @@ As in every *U-Net*, the initial tensor is progressively reduced in spatial size
 
 Often two networks are maintained: the usual one with the weights computed during gradient descend and the *Exponential Moving Average (EMA)* network, which contains the EMA of the weights. The EMA network is not that susceptible to spikes and fluctuations.
 
-### Forward Diffusion
+#### Forward Diffusion
 
-$x_t = q(x_t | x_{t-1}) = x_{t-1}\sqrt{1-\beta_t} + \epsilon_{t-1}\sqrt{\beta_t}$
+In the *forward diffusion* or training phase, we add noise $\epsilon_{t-1}$ to an image $x_{t-1}$ to obtain a noisier image $x_t$. The process is governed by this equation:
 
-$\epsilon \sim N(0,I)$
+$x_t = q(x_t | x_{t-1}) = x_{t-1}\sqrt{1-\beta_t} + \epsilon_{t-1}\sqrt{\beta_t} = N(x_{t-1}\sqrt{1-\beta_t}, \beta_t I)$,
 
-$x_t = q(x_t | x_{t-1}) = N(x_{t-1}\sqrt{1-\beta_t}, \beta_t I)$
+where:
 
+- $\beta_t$ is the variance scalar at step $t$; typically $\beta \in [0.0001, 0.02]$,
+- $\epsilon \sim N(0,I)$, i.e., it is a 2D Gaussian map with mean 0 and variance 1,
+- and $I$ is the identity matrix.
 
+As a further step, a *reparametrization* of $\beta$ is carried out, which transforms the forward diffusion equation from $q(x_t | x_{t-1})$ into $q(x_t | x_0)$, i.e., we reformulate the function such as any stage of the noisy image $x_t$ can be computed from the original, noise-free image $x_0$.
 
-The forward diffusion function q adds the required noise between two consecutive noisy images (x_(t-1) -> x_(t)); it is defined as:
+That *reparametrization* is defined as
 
-x_t = q(x_t | x_(t-1)) = sqrt(1-b_t) * x_(t-1) + sqrt(b_t) * e_(t-1)
+$\bar{\alpha_t} = \prod_{i=0}^{t}{\alpha_i}$, with $\alpha_t = 1 - \beta_t$,
 
-where
+and its interpretation is the following:
 
-x: image
-t: step in noise adding schedule
-b, beta: variance
-e, epsilon: Gaussian map with mean 0, standard deviation 1
+- $\bar{\alpha}$ represents the variance due to the signal (the original image $x_0$);
+- $1-\bar{\alpha}$ represents the variance due to the noise ($\epsilon$).
 
+Properly replacing $\beta$ as function of $\alpha$, we obtain the ***forward diffusion* equation used in practice**:
 
-Reparametrization:
+$x_t = q(x_t | x_0) = x_0\sqrt{\bar{\alpha_t}} + \epsilon\sqrt{1 - \bar{\alpha_t}} = N(x_0\sqrt{\bar{\alpha}_t}, (1-\bar{\alpha}_t) I)$
 
-$\alpha_t = 1 - \beta_t$
+Given this equation:
 
-$\bar{\alpha_t} = \prod_{i=0}^{t}{\alpha_i}$
+- We pick the real noise-free image $x_0$.
+- We add the noise at step $t$ to it with $e_t$ to obtain $x_t$.
+- We let the *U-Net* predict $\epsilon_{\theta,t}$ as approximation to $\epsilon_t$, and backpropagate the error.
 
+Finally, note that diffusion schedules vary the signal and noise ratios in such a way that during training
 
-$x_t = q(x_t | x_0) = x_0\sqrt{\bar{\alpha_t}} + \epsilon_t\sqrt{1 - \bar{\alpha_t}} = N(x_0\sqrt{\bar{\alpha}_t}, (1-\bar{\alpha}_t) I)$
+- the signal ratio decreases to 0 following a linear or cosine-based function,
+- and the noise ratio increases up to 1 following the complementary function.
 
+#### Reverse Diffusion
 
+During the *reverse diffusion* phase or inference, we generate images iteratively following a reverse schedule as the one introduced in the previous section. The equation of the reverse process can be obtained by inverting the forward equation and it has this form:
 
-### Reverse Diffusion
+$x_{t-1} = p(x_{t-1} | x_t) = \frac{1}{\sqrt{\alpha_t}} (x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha_t}}}\epsilon_{\theta}) + \sigma_t z$
 
+Here,
 
-Reverse diffusion:
+- $\epsilon_{\theta}$ is the noise map predicted by the *U-Net* for the pair ($x_t$, $\beta_t$);
+- $z$ is a 2D Gaussian defined as $z \sim N(0,I)$;
+- $\sigma_t^2 = \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_t} \beta_t$ is a random noise variance that decreases as inference steps are taken.
 
-$x_{T} \sim N(0,I)$
+The term $\sigma_t z$ is an experimentally added component which gives control over the generation: 
 
-$\epsilon_{\theta}(x_t, \beta_t)$
-
-$x_{t-1} = p(x_{t-1} | x_t) = f(\alpha_t, x_t) = \frac{1}{\sqrt{\alpha_t}} (x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha_t}}}\epsilon_{\theta}) + \sigma_t z$
-
-
-Here:
-
-- $\epsilon_{\theta}$
-- $\sigma_t$
-- $z \sim N(0,I)$
-
-
-<!--
-Some corollary notes on training and inference:
-
-    In the forward diffusion process (traning of the U-Net), the noise map (e_t, epsilon) is computed from the variance scalar (b_t, beta) and added to the image to obtain a noisy image x_t. Then, the noisy image is passed to the U-Net. The U-Net tries to guess the noise map, and the prediction error is used to update the weights via backpropagation.
-    In the reverse diffusion process (inference), the noise map is not computed using a formula which depends on the variance, but it is predicted by the U-Net model. Then, this noise map is substracted to the image to remove a noise step from it.
-
-More details
-
-The forward diffusion function q adds the required noise between two consecutive noisy images (x_(t-1) -> x_(t)); it is defined as:
-
-x_t = q(x_t | x_(t-1)) = sqrt(1-b_t) * x_(t-1) + sqrt(b_t) * e_(t-1)
-
-where
-
-x: image
-t: step in noise adding schedule
-b, beta: variance
-e, epsilon: Gaussian map with mean 0, standard deviation 1
-
-However, a reparametrization trick allows to formulate the function such as any stage of the noisy image (t) can be computed from the original, noise-free image (x_0):
-
-x_t = q(x_t | x_0) = sqrt(m(a_t)) * x_0 + sqrt(1 - m(a_t)) * e_t
-
-where
-
-a_t, alpla_t = 1 - b_t
-m(a_t) = prod(i=0:t; a_i)
-
-Note that
-
-    the value m(a_t) is the signal ratio
-    whereas the 1 - m(a_t) is the noise ratio.
-
-Additionally, e_t is exactly what the U-Net model is trying to output given b_t and the noisy image!
-
-Diffusion schedules vary the signal and noise ratios in such a way that during training
-
-    the signal ratio decreases (i.e., increase the value of t in m(a_t)) from 1-offset to 0 following a cosine function
-    and the noise ratio increases from offset to 1 folllowing the complementary cosine function.
-
-During inference or image generation the schedule is reversed.
-
-The reverse diffusion function p removes noise between two consecutive noisy images (x_(t) -> x_(t-1)); it has this form:
-
-x_(t-1) = p(x_(t-1) | x_t) = f(m(a_t); x_t)
-
-This reverse diffusion function is derived from the reparametrized forward diffusion and other concepts; it has a simple linear form but fractional coefficients dependent on the signal ratio 1 - m(a_t) and the noise ratio m(a_t). More importantly, it uses the noise map e which is predicted by the trained U-Net, i.e., the U-Net is trained using the forward diffusion to be able to create the necessary noise map value to be substracted in the reverse diffusion.
-
-It's worth mentioning that both the forward and reverse diffusion processes are Gaussian, meaning that the noise added in the forward process and removed in the reverse process is Gaussian. This Gaussian structure allows the formulation of the reverse process based on Bayes' theorem.
-
--->
-
+- we add more freedom to explore in the beginning allowing for a broader variation of pictures (more random noise), 
+- but then narrow down to the details.
 
 
 <div style="height: 20px;"></div>
