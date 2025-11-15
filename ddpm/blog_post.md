@@ -24,7 +24,7 @@ docker ps
 <strong>
 This is the first post of a series of two.
 You can find the <a href="https://mikelsagardia.io/posts/">second part here</a>.
-Also, you can find the accompanying code <a href="https://github.com/mxagar/diffusion-examples">this GitHub repository</a>.
+Also, you can find the accompanying code <a href="https://github.com/mxagar/diffusion-examples/ddpm">this GitHub repository</a>.
 </strong>
 </div>
 <div style="height: 30px;"></div>
@@ -179,7 +179,7 @@ Let's unpack each one of them to better understand how diffusion works.
 <div style="height: 20px;"></div>
 <div align="center" style="border: 1px solid #e4f312ff; background-color: #fcd361b9; padding: 1em; border-radius: 6px;">
 <strong>
-Note that this section has a dedicated repository in which all the models and formulae are implemented: <a href="https://github.com/mxagar/diffusion-examples/tree/main/ddpm">github.com/mxagar/diffusion-examples/ddpm</a>.
+Note that this section has a dedicated repository in which all the models and formulae are implemented: <a href="https://github.com/mxagar/diffusion-examples/tree/main/ddpm">github.com/mxagar/diffusion-examples/ddpm</a>. Some comments and examples from the implementation are provided in the last section.
 </strong>
 </div>
 <div style="height: 30px;"></div>
@@ -302,6 +302,41 @@ Stable Diffusion is one of the most popular latent diffusion models; due to the 
 - Quality of output
 - Diverstity
 - ... and speed!
+
+#### Example Implementation of DDPM
+
+The implementation [repository](https://github.com/mxagar/diffusion-examples/tree/main/ddpm) contains the code necessary to 
+
+<p align="center">
+<img src="../assets/cars_dataset_samples.png" alt="Cars Dataset Samples" width="1000"/>
+<small style="color:grey">
+In the example implementation, the <a href="https://www.kaggle.com/datasets/eduardo4jesus/stanford-cars-dataset">Stanford Cars Dataset</a> is used.
+The dataset consists on 16,185 color images and 196 classes; however, class labels are ignored and the images are resized to be <code>64x64</code> pixels.
+The figure shows 8 resized samples.
+</small>
+</p>
+
+
+<p align="center">
+<img src="../assets/cars_forward_diffusion.png" alt="Forward Diffusion on Car Sample" width="1000"/>
+<small style="color:grey">
+A total of <code>T=512</code> steps are taken to iterative add noise to a sample and train the <i>U-Net</i> to predict the added noise map. The figure shows 7 equally spaced stages of those steps.
+</small>
+</p>
+
+
+<p align="center">
+<img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<small style="color:grey">
+Inference or reverse diffusion during training; the performance for the same noise input is shown for epochs 1, 10, 100, 200 and 300 (last epoch).
+A total of <code>T=512</code> steps are taken to iterative remove noise. The figures show 9 equally spaced stages of those steps at each epoch.
+</small>
+</p>
+
 
 ## Conclusions
 
