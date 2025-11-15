@@ -327,12 +327,13 @@ A total of <code>T=512</code> steps are taken to iterative add noise to a sample
 
 <p align="center">
 <img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
-<img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<img src="../assets/sample_epoch_005.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
+<img src="../assets/sample_epoch_010.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
 <img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
 <img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
 <img src="../assets/sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
 <small style="color:grey">
-Inference or reverse diffusion during training; the performance for the same noise input is shown for epochs 1, 10, 100, 200 and 300 (last epoch).
+Inference or reverse diffusion during training; the performance for the same noise input is shown for epochs 1, 5, 10, 100, 200 and 300 (last epoch).
 A total of <code>T=512</code> steps are taken to iterative remove noise. The figures show 9 equally spaced stages of those steps at each epoch.
 </small>
 </p>
