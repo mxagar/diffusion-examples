@@ -70,6 +70,8 @@ Let's go!
 
 :construction: TBD.
 
+[`diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
+
 ## In-Painting Application
 
 :construction: TBD.
