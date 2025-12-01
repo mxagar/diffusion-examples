@@ -72,6 +72,44 @@ Let's go!
 
 [`diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
 
+
+<p align="center">
+<img src="../assets/robot_painting_sdxl_turbo.png" alt="A friendly humanoid robot drawing itself." width="1000"/>
+<small style="color:grey">
+Model: <a href="https://huggingface.co/stabilityai/sdxl-turbo">SDLX Tubo</a>.
+Prompt: <i>A friendly humanoid robot sits at a wooden table in a bright, sunlit room, happily drawing on a sketchbook. Soft light colors, landscape, peaceful, productive, and joyful atmosphere. The robot is drawing an image of itself drawing, creating a recursive effect. Large window in the background with greenery outside, warm natural lighting.</i>
+</small>
+</p>
+
+<p align="center">
+<img src="../assets/robot_painting_playground_v2.png" alt="A friendly humanoid robot drawing itself." width="1000"/>
+<small style="color:grey">
+Model: <a href="https://huggingface.co/playgroundai/playground-v2-1024px-aesthetic">Playground V2</a>.
+Same prompt ad before: <i>A friendly humanoid robot sits at a wooden table...</i>
+</small>
+</p>
+
+
+<p align="center">
+<img src="../assets/dog_drawing_sdlx_turbo_kandinsky.png" alt="A friendly humanoid dog." width="1000"/>
+<small style="color:grey">
+Model: <a href="https://huggingface.co/stabilityai/sdxl-turbo">SDLX Tubo</a>.
+Model: <a href="https://huggingface.co/kandinsky-community/kandinsky-2-2-prior">Kandinsky Prior 2.2</a>.
+Prompt (left): <i>A painting of a friendly dog painted by a child.</i>
+Prompt (left): <i>A photo of a friendly dog. High details, realistic (negative: low quality, bad quality).</i>
+</small>
+</p>
+
+
+<p align="center">
+<img src="../assets/vermeer_girl_mask_inpainting_kandinsky.png" alt="A friendly humanoid dog." width="1000"/>
+<small style="color:grey">
+Model: <a href="https://huggingface.co/kandinsky-community/kandinsky-2-2-decoder-inpaint">Kandinsky Inpaint 2.2</a>.
+Prompt (left): <i>Oil painting of a woman wearing a surgical mask, Vermeer (negative: bad anatomy, deformed, ugly, disfigured).</i>
+</small>
+</p>
+
+
 ## In-Painting Application
 
 :construction: TBD.
