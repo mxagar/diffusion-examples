@@ -72,6 +72,12 @@ Let's go!
     - [`transformers`](https://huggingface.co/docs/transformers/en/index): for model training and inference, supporting text, computer vision, audio, video, and multimodal data.
     - [`diffusers`](https://huggingface.co/docs/diffusers/en/index): pretrained diffusion models for generating videos, images, and audio.
 
+We can easily install those libraries in our Python environment with
+
+```bash
+pip install datasets transformers diffusers["torch"] accelerate
+```
+
 <p align="center">
 <img src="../assets/hugging_face_screenshot.png" alt="HuggingFace Screeshot" width="1000"/>
 <small style="color:grey">
@@ -79,75 +85,98 @@ Screeshot of the <a href="https://huggingface.co">HuggingFace</a> portal, featur
 </small>
 </p>
 
+*Discriminative* models of any modality as well as *generative* models specifically for text are handled usually by the `transformers` library. On the other hand, generative *diffusion* models are managed by `diffusers`. Browsing and selecting a model can be done on the web interface, whe we are able to filte them by several features, being probably one of the most important ones the [task](https://huggingface.co/docs/transformers/main/main_classes/pipelines#transformers.pipeline.task):
 
-Discriminative models are handled usually by `transformers`, as well generative models for text. On the other hand, generative *diffusion* models are contained in `diffusers`. Browsing and selecting a model can be done on the 
+- `sentiment-analysis`
+- `text-generation`
+- `summarization`
+- `translation`
+- `audio-classification`
+- `image-to-text`
+- `object-detection`
+- `image-segmentation`
+- ...
 
+If we click on a model we will land on its page, where we will see a model card reporting metrics, references and often a short code snippet to download the model and set it up and running.
 
-
-```bash
-pip install datasets transformers diffusers["torch"]
-```
-
-
-
-```python
-from diffusers import ConcreteModel
-
-# Load the pipeline
-pipe = ConcreteModel.from_pretrained(
-    "Organization/ConcreteModel",
-    ...
-)
-
-# Define Prompt
-prompt = "An AI drawing an AI"
-
-# Generate Image
-image = pipe(
-    prompt=prompt,
-    ...
-).images[0]
-
-# Save image
-image.save("example.png")
-```
-
+The easiest way of running an inference call with any model is via the `pipeline` interface. Even though each task and model have their particularities, there is a common pattern that is repeated; let's take as example the task `text-generation`:
 
 ```python
 import transformers
 
 # Load the pipeline
-pipeline = transformers.pipeline(
-    "text-generation",
-    model="Organization/ConcreteModel",
+pipe = transformers.pipeline(
+    "text-generation",  # task
+    model="Organization/ConcreteModel",  # change to real model, e.g.: "openai-community/gpt2"
 )
 
-# Define Prompt
+# Define the input (prompt)
 messages = [
     {"role": "system", "content": "You are an AI who can draw AIs."},
     {"role": "user", "content": "What's the best technique to draw an AI?"},
 ]
 
-# Generate Text
-outputs = pipeline(
+# Generate output (text)
+outputs = pipe(
     messages,
 )
 
-# Display Text
+# Display output (text)
 print(outputs[0]["generated_text"][-1])
 ```
 
+From the made-up example above, we can distill the common steps:
 
-- [HuggingFace Guide](https://github.com/mxagar/tool_guides/tree/master/hugging_face)
-- [HuggingFace LLM Fine-Tuning](https://github.com/mxagar/llm_peft_fine_tuning_example)
-- [Natural Language Processing with Transformers: My Notes](https://github.com/mxagar/nlp_with_transformers_nbs)
+- First, a model pipeline is loaded, by defining the task family (e.g., `text-generation`) as well as the concrete model name (e.g., `openai-community/gpt2`) we want to use.
+- Then, we need to define/instantiate the input to the pipeline; the input depends on the task at hand: if we want to classify an image, we need to load an image; if we want to generate text, we need an initial prompt of conversation history, etc.
+- Finally, we pass the input to the pipeline and collect the outputs. Again, the type of output depends on the task at hand.
 
+Instead of passing the model slug or name to the pipeline, we can explicitly load a particular type of model, say (the made-up) `ConcreteModel`, and similarly run inference with it. For instance, here's an example of how it usually is done for the task `text-to-image` using the `diffusers` library:
 
-## HuggingFace Diffusers
+```python
+from diffusers import ConcreteModel   # change to real model, e.g.: AutoPipelineForText2Image
 
-:construction: TBD.
+# Load the pipeline
+pipe = ConcreteModel.from_pretrained(
+    "Organization/ConcreteModel",  # change to real model, e.g.: "stabilityai/sdxl-turbo"
+    ...
+)
+
+# Define the input (prompt)
+prompt = "An AI drawing an AI"
+
+# Generate output (image)
+image = pipe(
+    prompt=prompt,
+    ...
+).images[0]
+
+# Save output (image)
+image.save("example.png")
+```
+
+All the above barely scratches the surface beneath the HuggingFace platform. In the following sections, I'll give practical examples that can be readily applied and which build up on the introduced concepts. However, if you would like to deepen on the capabilities of the `transformers` and `diffusers` liebraries, you can check the following resources:
+
+- My [guide on HuggingFace](https://github.com/mxagar/tool_guides/tree/master/hugging_face), which covers, among others:
+    - Combining models with Pytorch/Tensorflow code
+    - More complex pre- and post processing steps for each task/modality, e.g.: tokenization, encoding, etc.
+    - Fine-tuning pretrained models for different tasks adding cutom heads. 
+    - Saving/loading fine-tuned models locally, as well as exporting them as ONNX for production.
+    - Examples with genertive models of all modalities and conditioning types: `text-generation`, `text-to-image`, `text-to-video`, etc.
+- A comprehensive example in which I [fine-tune a Large Language Model (LLM)](https://github.com/mxagar/llm_peft_fine_tuning_example) to perform a custom text classification task.
+- My notes on the exceptional book [Natural Language Processing (NLP) with Transformers (Tunstall, von Werra & Wolf &mdash; O'Reilly)](https://github.com/mxagar/nlp_with_transformers_nbs), written by the co-founders of HuggingFace. The book is a must to fully understand and use the `transformers` library.
+
+## HuggingFace Diffusers in Practice
+
+Now let's run some examples with the `diffusers` library. For this section, I have prepared a notebook:
 
 [`diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
+
+In the blog post, I will show and comment the results of running different models; for detailed (and commented) code snippets, please check the notebook.
+
+Note that if want to run the notebook you will need a [GPU setup with at least 12 GB of VRAM](https://mikelsagardia.io/blog/mac-os-ubuntu-nvidia-egpu.html); alternatively, you could launch a [Google Colab instance](https://colab.research.google.com/) with a NVIDA T4, or similar.
+
+The first notable example in the notebook deals with a *conditioned* image generation task, in particular `text-to-image` using the [Stable Diffusion XL Turbo](#) model. The code follows the pattern introduced in the previous section:
 
 ```python
 from diffusers import AutoPipelineForText2Image
@@ -157,7 +186,7 @@ pipe = AutoPipelineForText2Image.from_pretrained(
     "stabilityai/sdxl-turbo", 
     torch_dtype=torch.float16, 
     variant="fp16"
-).to(device)
+)
 
 prompt = """
 A friendly humanoid robot sits at a wooden table in a bright, sunlit room, happily drawing on a sketchbook.
@@ -172,21 +201,31 @@ rand_gen = torch.manual_seed(148607185)
 # Generate an image based on the text prompt
 image = pipe(
     prompt=prompt, 
-    num_inference_steps=1, # For this model you can use 1, but for normal Stable Diffusion you should use 25 or 50
-    guidance_scale=1.0, # For this model 1 is fine, for normal Stable Diffusion you should use 6 or 7, or up to 10 or so
+    num_inference_steps=1, # 1 for sdxl-turbo, 25-50 for SD
+    guidance_scale=1.0, # 1 for sdxl-turbo, 6-10 for SD
     negative_prompt=["overexposed", "underexposed"], 
     generator=rand_gen
 ).images[0]
 ```
 
+The result is promising, but it clearly reveals that the image was generated by a model: we can see that unfinished or rare details appear in eyes and fingers, the mechanical structure of the robot with straight geometrical lines is not consistent or seems unrealistic, etc.
 
 <p align="center">
 <img src="../assets/robot_painting_sdxl_turbo.png" alt="A friendly humanoid robot drawing itself." width="1000"/>
 <small style="color:grey">
-Model: <a href="https://huggingface.co/stabilityai/sdxl-turbo">SDLX Tubo</a>.
+Image generated with <a href="https://huggingface.co/stabilityai/sdxl-turbo">SDXL Tubo</a>.
 Prompt: <i>A friendly humanoid robot sits at a wooden table in a bright, sunlit room, happily drawing on a sketchbook. Soft light colors, landscape, peaceful, productive, and joyful atmosphere. The robot is drawing an image of itself drawing, creating a recursive effect. Large window in the background with greenery outside, warm natural lighting.</i>
 </small>
 </p>
+
+[Stable Diffusion XL Turbo](#) is ...
+
+- How it works
+- Difference to previous diffussion models
+- Why it is important
+- ...
+
+An alternative model is [Playground V2](#)... difference to other DDPM or SDXL.
 
 <p align="center">
 <img src="../assets/robot_painting_playground_v2.png" alt="A friendly humanoid robot drawing itself." width="1000"/>
@@ -196,17 +235,19 @@ Same prompt ad before: <i>A friendly humanoid robot sits at a wooden table...</i
 </small>
 </p>
 
+Models can be used not only individually, but also in a concatenated chain. In the following example, I have let SDXL Turbo create an image of a puppy which is then used as condition for the `image-to-image` model [Kandinsky 2.2](https://huggingface.co/kandinsky-community/kandinsky-2-2-prior). The result is an exaggerated image of a dog, but I think it showcases the potential of building such chained pipelines.
 
 <p align="center">
 <img src="../assets/dog_drawing_sdlx_turbo_kandinsky.png" alt="A friendly humanoid dog." width="1000"/>
 <small style="color:grey">
-Model: <a href="https://huggingface.co/stabilityai/sdxl-turbo">SDLX Tubo</a>.
-Model: <a href="https://huggingface.co/kandinsky-community/kandinsky-2-2-prior">Kandinsky Prior 2.2</a>.
-Prompt (left): <i>A painting of a friendly dog painted by a child.</i>
-Prompt (left): <i>A photo of a friendly dog. High details, realistic (negative: low quality, bad quality).</i>
+Left image generated by <a href="https://huggingface.co/stabilityai/sdxl-turbo">SDXL Tubo</a>.
+Right image generated by <a href="https://huggingface.co/kandinsky-community/kandinsky-2-2-prior">Kandinsky Prior 2.2</a>.
+Left prompt: <i>A painting of a friendly dog painted by a child.</i>
+Right prompt: <i>A photo of a friendly dog. High details, realistic (negative: low quality, bad quality).</i>
 </small>
 </p>
 
+Similarly, 
 
 <p align="center">
 <img src="../assets/vermeer_girl_mask_inpainting_kandinsky.png" alt="A friendly humanoid dog." width="1000"/>
