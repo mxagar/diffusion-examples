@@ -62,9 +62,86 @@ In this second part, I would like to focus on **the practical application** of t
 
 Let's go!
 
-## Introduction to HuggingFace
+## A Very Brief Introduction to HuggingFace
 
-:construction: TBD.
+[HuggingFace](https://huggingface.co) has become one of the most important portals in the machine learning community. It builds a collaborative environment where state-of-the-art **datasets** and **models** can be **shared** and **tried** (*Spaces*). Moreover, HuggingFace offers two additional and very powerful sets tools:
+
+- [**courses**](https://huggingface.co/learn) which deal with the most important domains and technical methods: computer vision, natural language processing, audio, agents, 3D processing, reinforcement learning, etc.;
+- and **libraries** with which we can handle both datasets and models end-to-end and for any relevant modality. The most important ones are:
+    - [`datasets`](https://huggingface.co/docs/datasets/en/index): conceived to access and share audio, text, and image data.
+    - [`transformers`](https://huggingface.co/docs/transformers/en/index): for model training and inference, supporting text, computer vision, audio, video, and multimodal data.
+    - [`diffusers`](https://huggingface.co/docs/diffusers/en/index): pretrained diffusion models for generating videos, images, and audio.
+
+<p align="center">
+<img src="../assets/hugging_face_screenshot.png" alt="HuggingFace Screeshot" width="1000"/>
+<small style="color:grey">
+Screeshot of the <a href="https://huggingface.co">HuggingFace</a> portal, featuring available models sorted by their popularity.
+</small>
+</p>
+
+
+Discriminative models are handled usually by `transformers`, as well generative models for text. On the other hand, generative *diffusion* models are contained in `diffusers`. Browsing and selecting a model can be done on the 
+
+
+
+```bash
+pip install datasets transformers diffusers["torch"]
+```
+
+
+
+```python
+from diffusers import ConcreteModel
+
+# Load the pipeline
+pipe = ConcreteModel.from_pretrained(
+    "Organization/ConcreteModel",
+    ...
+)
+
+# Define Prompt
+prompt = "An AI drawing an AI"
+
+# Generate Image
+image = pipe(
+    prompt=prompt,
+    ...
+).images[0]
+
+# Save image
+image.save("example.png")
+```
+
+
+```python
+import transformers
+
+# Load the pipeline
+pipeline = transformers.pipeline(
+    "text-generation",
+    model="Organization/ConcreteModel",
+)
+
+# Define Prompt
+messages = [
+    {"role": "system", "content": "You are an AI who can draw AIs."},
+    {"role": "user", "content": "What's the best technique to draw an AI?"},
+]
+
+# Generate Text
+outputs = pipeline(
+    messages,
+)
+
+# Display Text
+print(outputs[0]["generated_text"][-1])
+```
+
+
+- [HuggingFace Guide](https://github.com/mxagar/tool_guides/tree/master/hugging_face)
+- [HuggingFace LLM Fine-Tuning](https://github.com/mxagar/llm_peft_fine_tuning_example)
+- [Natural Language Processing with Transformers: My Notes](https://github.com/mxagar/nlp_with_transformers_nbs)
+
 
 ## HuggingFace Diffusers
 
