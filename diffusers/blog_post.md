@@ -72,6 +72,36 @@ Let's go!
 
 [`diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
 
+```python
+from diffusers import AutoPipelineForText2Image
+
+# Load the SDXL-Turbo text-to-image pipeline
+pipe = AutoPipelineForText2Image.from_pretrained(
+    "stabilityai/sdxl-turbo", 
+    torch_dtype=torch.float16, 
+    variant="fp16"
+).to(device)
+
+prompt = """
+A friendly humanoid robot sits at a wooden table in a bright, sunlit room, happily drawing on a sketchbook.
+Soft light colors, landscape, peaceful, productive, and joyful atmosphere.
+The robot is drawing an image of itself drawing, creating a recursive effect.
+Large window in the background with greenery outside, warm natural lighting.
+"""
+
+# Seed for reproducibility
+rand_gen = torch.manual_seed(148607185)
+
+# Generate an image based on the text prompt
+image = pipe(
+    prompt=prompt, 
+    num_inference_steps=1, # For this model you can use 1, but for normal Stable Diffusion you should use 25 or 50
+    guidance_scale=1.0, # For this model 1 is fine, for normal Stable Diffusion you should use 6 or 7, or up to 10 or so
+    negative_prompt=["overexposed", "underexposed"], 
+    generator=rand_gen
+).images[0]
+```
+
 
 <p align="center">
 <img src="../assets/robot_painting_sdxl_turbo.png" alt="A friendly humanoid robot drawing itself." width="1000"/>
