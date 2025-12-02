@@ -9,7 +9,7 @@ The folder contains two files:
 - The module [`unet.py`](./unet.py), taken from [labmlai/annotated_deep_learning_paper_implementations](https://github.com/labmlai/annotated_deep_learning_paper_implementations). This module defines the *U-Net* model which is able to predict the noise of an image, after trained.
 - The notebook [`ddpm.ipynb`](./ddpm.ipynb), where the entire dataset and model preparation, as well as the training, are implemented. Some parts were modified from the course material of the [Udacity Generative AI Nanodegree](https://www.udacity.com/course/generative-ai--nd608).
 
-The dataset used in the example is the [Stanford Cars Dataset](https://www.kaggle.com/datasets/eduardo4jesus/stanford-cars-dataset). It contains 16,185 color images categorized in 196 classes, which are resized to `64x64` .
+The dataset used in the example is the [Stanford Cars Dataset](https://www.kaggle.com/datasets/eduardo4jesus/stanford-cars-dataset). It contains 16,185 color images categorized in 196 classes, which are resized to `64x64`.
 
 ![Cars Dataset Samples](../assets/cars_dataset_samples.png)
 
