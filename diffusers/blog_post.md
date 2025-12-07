@@ -260,7 +260,9 @@ Prompt (left): <i>Oil painting of a woman wearing a surgical mask, Vermeer (nega
 
 ## In-Painting Application
 
-:construction: TBD.
+[Gradio Quick Guide](https://github.com/mxagar/tool_guides/tree/master/gradio)
+
+
 
 ## Conclusions
 
