@@ -1,259 +1,236 @@
+from typing import Callable, Optional, Sequence, Tuple, List, Any
 import gradio as gr
 import numpy as np
 from PIL import Image, ImageDraw
 
-input_points = []
-IMG_SIZE = 512
-input_image = None
 
-def generate_app(get_processed_inputs, inpaint):
-    
-    global input_points
-    global input_image
-    
-    def get_points(img, evt: gr.SelectData):
-        
-        global input_image
-        
-        # The first time this is called, we save the untouched
-        # input image
-        if len(input_points) == 0:
-            input_image = img.copy()
-        
-        x = evt.index[0]
-        y = evt.index[1]
+# Constants
+IMG_SIZE: int = 512
 
-        input_points.append([x, y])
-        
-        # Run SAM
-        sam_output = run_sam()
-        
-        # Mark selected points with a green crossmark
-        draw = ImageDraw.Draw(img)
-        size = 10
-        for point in input_points:
-
-            x, y = point
-
-            draw.line((x - size, y, x + size, y), fill="green", width=5)
-            draw.line((x, y - size, x, y + size), fill="green", width=5)
-        
-        return sam_output, img
+# Type aliases
+Point = Tuple[int, int]
+Points = List[Point]
+AnnotatedMasks = List[Tuple[np.ndarray, str]]
+SamOutput = Tuple[Image.Image, AnnotatedMasks]
+GetProcessedInputsFn = Callable[[Image.Image, Sequence[Sequence[Point]]], np.ndarray]
+InpaintFn = Callable[[Image.Image, np.ndarray, str, Optional[str], int, float], Image.Image]
 
 
-    def run_sam():
-        
-        if input_image is None:
-            raise gr.Error("No points provided. Click on the image to select the object to segment with SAM")
-        
-        try:
-            
-            mask = get_processed_inputs(input_image, [input_points])
-            
-            res_mask = np.array(Image.fromarray(mask).resize((IMG_SIZE, IMG_SIZE)))
-            
-            return (
-                input_image.resize((IMG_SIZE, IMG_SIZE)), 
-                [
-                    (res_mask, "background"), 
-                    (~res_mask, "subject")
-                ]
-            )
-        except Exception as e:
-            raise gr.Error(str(e))
+def _preprocess_to_square(input_img: Image.Image, size: int = IMG_SIZE) -> Image.Image:
+    """Pad to square (white) and resize."""
+    w, h = input_img.size
+    if w != h:
+        new_size = max(w, h)
+        new_image = Image.new("RGB", (new_size, new_size), "white")
+        left = (new_size - w) // 2
+        top = (new_size - h) // 2
+        new_image.paste(input_img, (left, top))
+        input_img = new_image
+    return input_img.resize((size, size))
 
 
-    def run(prompt, negative_prompt, cfg, seed, invert):
+def _draw_crosshair(img: Image.Image, points: Sequence[Point], size: int = 10) -> Image.Image:
+    """Draw crosshairs on a copy of the image (non-destructive)."""
+    out = img.copy()
+    draw = ImageDraw.Draw(out)
+    for x, y in points:
+        draw.line((x - size, y, x + size, y), fill="green", width=5)
+        draw.line((x, y - size, x, y + size), fill="green", width=5)
+    return out
 
-        if input_image is None:
-            raise gr.Error("No points provided. Click on the image to select the object to segment with SAM")
-        
-        amask = run_sam()[1][0][0]
-        
-        if bool(invert):
-            what = 'subject'
-            amask = ~amask
-        else:
-            what = 'background'
-        
-        gr.Info(f"Inpainting {what}... (this will take up to a few minutes)")
-        try:
-            inpainted = inpaint(input_image, amask, prompt, negative_prompt, seed, cfg)
-        except Exception as e:
-            raise gr.Error(str(e))
 
-        return inpainted.resize((IMG_SIZE, IMG_SIZE))
-    
-    def reset_points(*args):
-        
-        input_points.clear()
-    
-    
-    def preprocess(input_img):
-        
-        if input_img is None:
-            return None
-        
-        # Make sure the image is square
-        width, height = input_img.size
-        
-        if width != height:
-            
-            gr.Warning("Image is not square, adding white padding")
+def generate_app(get_processed_inputs: GetProcessedInputsFn, inpaint: InpaintFn) -> gr.Blocks:
+    """
+    Build the Gradio UI.
 
-            # Determine the size for the new square image
-            new_size = max(width, height)
+    Args:
+        get_processed_inputs: Callable that runs SAM and returns a boolean/binary mask (H,W).
+            Expected signature: (image_pil, [[(x,y), ...]]) -> np.ndarray mask
+        inpaint: Callable that runs inpainting and returns a PIL image.
+            Expected signature: (image_pil, mask_np, prompt, negative_prompt, seed, cfg) -> PIL.Image
 
-            # Create a new image with the desired size and background color
-            # Change 'black' to your desired background color if needed
-            new_image = Image.new("RGB", (new_size, new_size), 'white')
-            
-            # Calculate the position to paste the original image onto the new image
-            left = (new_size - width) // 2
-            top = (new_size - height) // 2
+    Returns:
+        A gr.Blocks app (already launched).
+    """
 
-            # Paste the original image onto the new image
-            new_image.paste(input_img, (left, top))
-            
-            input_img = new_image
-        
-        return input_img.resize((IMG_SIZE, IMG_SIZE))
-    
-    
     with gr.Blocks() as demo:
+        # Session state (per user)
+        points_state = gr.State([])     # type: ignore[var-annotated]
+        image_state = gr.State(None)    # type: ignore[var-annotated]
 
         gr.Markdown(
-        """
-        # Image inpainting
-        1. Upload an image by clicking on the first canvas.
-        2. Click on the subject you would like to keep. Immediately SAM will be run and you will see the results. If you
-           are happy with those results move to the next step, otherwise add more points to refine your mask.
-        3. Write a prompt (and optionally a negative prompt) for what you want to generate for the infilling. 
-           Adjust the CFG scale and the seed if needed. You can also invert the mask, i.e., infill the subject 
-           instead of the background by toggling the relative checkmark.
-        4. Click on "run inpaint" and wait for up to two minutes. If you are not happy with the result, 
-           change your prompts and/or the settings (CFG scale, random seed) and click "run inpaint" again.
+            """
+            # Image inpainting
+            1. Upload an image by clicking on the first canvas.
+            2. Click on the subject you would like to keep. SAM will run immediately.
+               Add more points to refine the mask.
+            3. Write a prompt (and optionally a negative prompt). Adjust CFG and seed.
+               Toggle the checkbox to infill subject instead of background.
+            4. Click "Run inpaint". Adjust prompt/settings and run again if needed.
 
-        # EXAMPLES
-        Scroll down to see a few examples. Click on an example and the image and the prompts will be filled for you. 
-        Note however that you still need to do step 2 and 4.
-        """)
+            # EXAMPLES
+            Scroll down to see a few examples. Click one to fill image + prompts.
+            You still need step 2 and step 4.
+            """
+        )
 
         with gr.Row():
-            
-            # This is what the user will interact with
             display_img = gr.Image(
-                label="Input", 
-                interactive=True, 
-                type='pil',
+                label="Input",
+                interactive=True,
+                type="pil",
                 height=IMG_SIZE,
-                width=IMG_SIZE
+                width=IMG_SIZE,
             )
 
             sam_mask = gr.AnnotatedImage(
                 label="SAM result",
-                interactive=False,
                 height=IMG_SIZE,
                 width=IMG_SIZE,
-                color_map={"background": "#a89a00"}
+                color_map={"background": "#a89a00"},
             )
 
             result = gr.Image(
                 label="Output",
-                interactive=False,
-                type='pil',
+                type="pil",
                 height=IMG_SIZE,
                 width=IMG_SIZE,
-            )            
-        
-        # Events
-        display_img.select(get_points, inputs=[display_img], outputs=[sam_mask, display_img])
-        display_img.clear(reset_points)
-        display_img.change(preprocess, inputs=[display_img], outputs=[display_img])
-        
+            )
+
         with gr.Row():
             cfg = gr.Slider(
-                label="Classifier-Free Guidance Scale", 
-                minimum=0.0, 
-                maximum=20.0, 
-                value=7, 
-                step=0.05
+                label="Classifier-Free Guidance Scale",
+                minimum=0.0,
+                maximum=20.0,
+                value=7.0,
+                step=0.05,
             )
-            random_seed = gr.Number(
-                label="Random seed", 
-                value=74294536, 
-                precision=0
-            )
-            checkbox = gr.Checkbox(
-                label="Infill subject instead \nof background"
-            )
+            random_seed = gr.Number(label="Random seed", value=74294536, precision=0)
+            invert_checkbox = gr.Checkbox(label="Infill subject instead \nof background")
 
         with gr.Row():
-            prompt = gr.Textbox(
-                label="Prompt for infill"
+            prompt = gr.Textbox(label="Prompt for infill")
+            neg_prompt = gr.Textbox(label="Negative prompt")
+
+            reset_btn = gr.ClearButton(
+                value="Reset",
+                components=[display_img, sam_mask, result, prompt, neg_prompt, invert_checkbox],
             )
-            neg_prompt = gr.Textbox(
-                label="Negative prompt"
-            )
-            
-            reset_points_b = gr.ClearButton(
-                value="Reset", 
-                components=[
-                    display_img, 
-                    sam_mask, 
-                    result,
-                    prompt,
-                    neg_prompt,
-                    checkbox
-                ]
-            )
-            reset_points_b.click(reset_points)
-            
-            submit_inpaint = gr.Button(value="Run inpaint")
+
+            run_btn = gr.Button(value="Run inpaint")
 
         with gr.Row():
-            examples = gr.Examples(
+            gr.Examples(
                 [
-                    [
-                        "car.png", 
-                        "a car driving on planet Mars. Studio lights, 1970s", 
-                        "artifacts, low quality, distortion",
-                        74294536
-                    ],
-                    [
-                        "dragon.jpeg",
-                        "a dragon in a medieval village",
-                        "artifacts, low quality, distortion",
-                        97
-                    ],
-                    [
-                        "monalisa.png",
-                        "a fantasy landscape with flying dragons",
-                        "artifacts, low quality, distortion",
-                        97
-                    ]
+                    ["car.png", "a car driving on planet Mars. Studio lights, 1970s", "artifacts, low quality, distortion", 74294536],
+                    ["dragon.jpeg", "a dragon in a medieval village", "artifacts, low quality, distortion", 97],
+                    ["monalisa.png", "a fantasy landscape with flying dragons", "artifacts, low quality, distortion", 97],
                 ],
-                inputs=[
-                    display_img,
-                    prompt,
-                    neg_prompt,
-                    random_seed
-                ]
-
+                inputs=[display_img, prompt, neg_prompt, random_seed],
             )
 
-        submit_inpaint.click(
-            fn=run, 
-            inputs=[
-                prompt, 
-                neg_prompt,
-                cfg,
-                random_seed,
-                checkbox
-            ], 
-            outputs=[result]
+        # Callbacks
+
+        def on_image_change(img: Optional[Image.Image]) -> Tuple[Optional[Image.Image], Points, Optional[Image.Image]]:
+            """Preprocess image; reset points and stored original image when user uploads/changes."""
+            if img is None:
+                return None, [], None
+            processed = _preprocess_to_square(img, IMG_SIZE)
+            return processed, [], processed.copy()
+
+        def run_sam(image_pil: Optional[Image.Image], points: Points) -> SamOutput:
+            if image_pil is None or not points:
+                raise gr.Error("Upload an image and click at least one point to segment with SAM.")
+
+            # Your get_processed_inputs expects [[points]]
+            mask = get_processed_inputs(image_pil, [points])
+
+            # Ensure mask is HxW and uint8/bool; then resize to IMG_SIZE with nearest neighbor
+            mask_img = Image.fromarray(mask.astype(np.uint8) * 255 if mask.dtype == bool else mask.astype(np.uint8))
+            mask_img = mask_img.resize((IMG_SIZE, IMG_SIZE), resample=Image.NEAREST)
+            res_mask = (np.array(mask_img) > 127)
+
+            base = image_pil.resize((IMG_SIZE, IMG_SIZE))
+            return base, [(res_mask, "background"), (~res_mask, "subject")]
+
+        def on_select(
+            img: Image.Image,
+            points: Points,
+            original_img: Optional[Image.Image],
+            evt: gr.SelectData,
+        ) -> Tuple[SamOutput, Image.Image, Points, Image.Image]:
+            """Handle click: store original once, append point, run SAM, overlay crosshair."""
+            if original_img is None:
+                original_img = img.copy()
+
+            x, y = int(evt.index[0]), int(evt.index[1])
+            points = [*points, (x, y)]
+
+            sam_out = run_sam(original_img, points)
+            overlayed = _draw_crosshair(img, points)
+
+            return sam_out, overlayed, points, original_img
+
+        def on_run_inpaint(
+            prompt_text: str,
+            negative_text: str,
+            cfg_val: float,
+            seed_val: float,
+            invert: bool,
+            original_img: Optional[Image.Image],
+            points: Points,
+        ) -> Image.Image:
+            if original_img is None or not points:
+                raise gr.Error("Upload an image and click at least one point before inpainting.")
+
+            base_img, masks = run_sam(original_img, points)
+            # masks[0] is (background_mask, "background")
+            amask = masks[0][0]
+
+            what = "subject" if invert else "background"
+            if invert:
+                amask = ~amask
+
+            gr.Info(f"Inpainting {what}...")
+
+            # Gradio Number gives float; ensure int for seed
+            seed_int = int(seed_val)
+
+            out = inpaint(
+                original_img,
+                amask.astype(np.uint8) * 255,  # many pipelines like 0/255 masks
+                prompt_text,
+                negative_text if negative_text else None,
+                seed_int,
+                float(cfg_val),
+            )
+            return out.resize((IMG_SIZE, IMG_SIZE))
+
+        # Wire events
+        display_img.change(
+            fn=on_image_change,
+            inputs=[display_img],
+            outputs=[display_img, points_state, image_state],
+        )
+
+        display_img.select(
+            fn=on_select,
+            inputs=[display_img, points_state, image_state],
+            outputs=[sam_mask, display_img, points_state, image_state],
+        )
+
+        # When the image is cleared/reset, clear state too
+        reset_btn.click(
+            fn=lambda: ([], None),
+            inputs=[],
+            outputs=[points_state, image_state],
+        )
+
+        run_btn.click(
+            fn=on_run_inpaint,
+            inputs=[prompt, neg_prompt, cfg, random_seed, invert_checkbox, image_state, points_state],
+            outputs=[result],
         )
 
     demo.queue(max_size=1).launch(share=True, debug=True)
-    
     return demo
