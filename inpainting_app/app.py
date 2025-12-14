@@ -122,19 +122,20 @@ def generate_app(get_processed_inputs: GetProcessedInputsFn, inpaint: InpaintFn)
         with gr.Row():
             gr.Examples(
                 [
-                    ["car.png", "a car driving on planet Mars. Studio lights, 1970s", "artifacts, low quality, distortion", 74294536],
-                    ["dragon.jpeg", "a dragon in a medieval village", "artifacts, low quality, distortion", 97],
-                    ["monalisa.png", "a fantasy landscape with flying dragons", "artifacts, low quality, distortion", 97],
+                    ["./assets/car.png", "a car driving on planet Mars. Studio lights, 1970s", "artifacts, low quality, distortion", 74294536],
+                    ["./assets/dragon.jpeg", "a dragon in a medieval village", "artifacts, low quality, distortion", 97],
+                    ["./assets/monalisa.png", "a fantasy landscape with flying dragons", "artifacts, low quality, distortion", 97],
                 ],
                 inputs=[display_img, prompt, neg_prompt, random_seed],
             )
 
         # Callbacks
 
-        def on_image_change(img: Optional[Image.Image]) -> Tuple[Optional[Image.Image], Points, Optional[Image.Image]]:
+        def on_image_upload(img: Optional[Image.Image]) -> Tuple[Optional[Image.Image], Points, Optional[Image.Image]]:
             """Preprocess image; reset points and stored original image when user uploads/changes."""
             if img is None:
                 return None, [], None
+
             processed = _preprocess_to_square(img, IMG_SIZE)
             return processed, [], processed.copy()
 
@@ -207,8 +208,8 @@ def generate_app(get_processed_inputs: GetProcessedInputsFn, inpaint: InpaintFn)
             return out.resize((IMG_SIZE, IMG_SIZE))
 
         # Wire events
-        display_img.change(
-            fn=on_image_change,
+        display_img.upload(
+            fn=on_image_upload,
             inputs=[display_img],
             outputs=[display_img, points_state, image_state],
         )
