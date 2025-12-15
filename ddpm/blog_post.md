@@ -372,4 +372,3 @@ Eight generated samples after 300 epochs of training.
 ## Conclusions
 
 :construction: TBD.
-

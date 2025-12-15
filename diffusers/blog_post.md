@@ -75,7 +75,7 @@ Let's go!
 We can easily install those libraries in our Python environment with
 
 ```bash
-pip install datasets transformers diffusers["torch"] accelerate
+pip install datasets transformers diffusers["torch"] accelerate gradio
 ```
 
 <p align="center">
@@ -170,7 +170,7 @@ All the above barely scratches the surface beneath the HuggingFace platform. In 
 
 Now let's run some examples with the `diffusers` library. For this section, I have prepared a notebook:
 
-[`diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
+[`diffusers/diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
 
 In the blog post, I will show and comment the results of running different models; for detailed (and commented) code snippets, please check the notebook.
 
@@ -218,14 +218,17 @@ Prompt: <i>A friendly humanoid robot sits at a wooden table in a bright, sunlit 
 </small>
 </p>
 
-[Stable Diffusion XL Turbo](#) is ...
+[Stable Diffusion XL Turbo](#) is a real-time text-to-image diffusion model derived from [Stable Diffusion XL (SDLXL)](#), designed to generate high-quality images in as few as one to four denoising steps. Unlike traditional diffusion models that require dozens of inference steps, SDXL Turbo prioritizes latency and interactivity while preserving much of SDXL's visual fidelity.
 
-- How it works
-- Difference to previous diffussion models
-- Why it is important
-- ...
+SDXL Turbo is trained using [Adversarial Diffusion Distillation (ADD)](#). Instead of sampling from the full diffusion process during inference, the model learns to directly approximate the output of a multi-step teacher model (SDXL) in very few steps:
 
-An alternative model is [Playground V2](#)... difference to other DDPM or SDXL.
+- A large, high-quality SDXL model acts as a teacher.
+- The Turbo model is trained to match the teacher's output distribution.
+- An adversarial objective helps close the quality gap caused by aggressive step reduction.
+
+In other words, a bigger model is distilled to a smaller one; that smaller model enables real-time generation in UIs and creative tools.
+
+An alternative model to SDXL is [Playground V2](#), which also targets high-quality image generation with fewer inference steps; this model prioritizes visual quality and creative expressiveness, and doesn't follow any distillation during training.
 
 <p align="center">
 <img src="../assets/robot_painting_playground_v2.png" alt="A friendly humanoid robot drawing itself." width="1000"/>
@@ -247,21 +250,48 @@ Right prompt: <i>A photo of a friendly dog. High details, realistic (negative: l
 </small>
 </p>
 
-Similarly, 
+Kandinsky is a multimodal diffusion model that separates semantic understanding from image generation. Unlike SDXL-style models, which directly condition image generation on text embeddings, Kandinsky uses a two-stage architecture:
+
+- Prior model, which maps text (and optionally images) into a shared latent space that represents high-level semantics.
+- Decoder model (diffusion), which takes these semantic embeddings and generates the final image via a diffusion process.
+
+This explicit separation makes Kandinsky particularly well suited for compositional pipelines. One such pipeline consists in *in-painting*, i.e.: we ask the model to generate a sub-image on a provided initial image. Here's how it works:
+
+- Mask definition: A binary mask specifies which regions of the image should be regenerated (white) and which should remain fixed (black).
+- Latent conditioning: The unmasked parts of the image are encoded and injected into the diffusion process, anchoring the generation spatially.
+- Semantic guidance via the prior: Text prompts and optional image context guide what should appear in the masked regions.
+- Diffusion-based regeneration: Noise is added only in the masked area, and the model denoises it while respecting both the surrounding visual context and the semantic intent from the prompt.
+
+Because Kandinsky reasons at a semantic level first, inpainting results tend to be context-aware: lighting, perspective, and style are usually consistent with the original image, even when the prompt introduces new elements.
+
+Here is an example with the popular oil painting [*The Girl with the Pearl Ear-ring* from Vermeer](#). Unfortunately, the *pearl ear-ring* is removed!
 
 <p align="center">
 <img src="../assets/vermeer_girl_mask_inpainting_kandinsky.png" alt="A friendly humanoid dog." width="1000"/>
 <small style="color:grey">
 Model: <a href="https://huggingface.co/kandinsky-community/kandinsky-2-2-decoder-inpaint">Kandinsky Inpaint 2.2</a>.
-Prompt (left): <i>Oil painting of a woman wearing a surgical mask, Vermeer (negative: bad anatomy, deformed, ugly, disfigured).</i>
+Prompt: <i>Oil painting of a woman wearing a surgical mask, Vermeer (negative: bad anatomy, deformed, ugly, disfigured).</i>
+Check <a href="#">this piece from Banksy</a>, if you would like to know how this could be done differently.
 </small>
 </p>
 
+## Building Proof-of-Concept Applications: Zero-Shot Segmentation and In-Painting
 
-## In-Painting Application
+
 
 [Gradio Quick Guide](https://github.com/mxagar/tool_guides/tree/master/gradio)
 
+[`inpainting_app/inpainting.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
+
+
+<p align="center">
+<img src="../inpainting_app/assets/monalisa_inpainting.png" alt="Monalisa In-Painting." width="1000"/>
+<small style="color:grey">
+Monalisa re-imagined. <a href="https://huggingface.co/docs/transformers/en/model_doc/sam">SAM</a> is used to segment foreground/background and <a href="https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1
+">Stable Diffusion XL Inpainting</a> to re-generated the selected region.
+Prompt (left): <i>A fantasy landscape with flying dragons (negative: artifacts, low quality, distortion).</i>
+</small>
+</p>
 
 
 ## Conclusions
