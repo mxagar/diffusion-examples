@@ -271,17 +271,25 @@ Here is an example with the popular oil painting [*The Girl with the Pearl Ear-r
 <small style="color:grey">
 Model: <a href="https://huggingface.co/kandinsky-community/kandinsky-2-2-decoder-inpaint">Kandinsky Inpaint 2.2</a>.
 Prompt: <i>Oil painting of a woman wearing a surgical mask, Vermeer (negative: bad anatomy, deformed, ugly, disfigured).</i>
+I obtained the image from the Wikipedia and draw the mask manually.
 Check <a href="#">this piece from Banksy</a>, if you would like to know how this could be done differently.
 </small>
 </p>
 
 ## Building Proof-of-Concept Applications: Zero-Shot Segmentation and In-Painting
 
+As shown in the notebook [`diffusers/diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb), it is very simple to run different models for different isolated tasks. That brings us to the next logical question: *what if we combine different models to build small apps?*
 
+Along this lines, I have implemented an [`inpainting_app`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers), which works as follows:
+
+- We can load an image, where we select points in a region we would like to segment: the foreground.
+- Then, the [Segment Anything Model (SAM) from Meta](https://huggingface.co/docs/transformers/en/model_doc/sam) is used to create a mask of that region of interest; the complementary is the background.
+- Finally, we select either the foreground or the background region and run the in-painting version of [SDXL model](https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1); that way, the selected region is re-painted following the introduced prompt, but remaining consistent with the contents of the complementary region.
+
+That application makes use of [Gradio](https://www.gradio.app/), a python library similar to [Streamlit](https://streamlit.io/) which builds nice-looking, web-based GUIs. Gradio is developed by HuggingFace, making it the perfect choice for the models we are using. The library is really easy to use and I won't spend &mdash;
 
 [Gradio Quick Guide](https://github.com/mxagar/tool_guides/tree/master/gradio)
 
-[`inpainting_app/inpainting.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb)
 
 
 <p align="center">
