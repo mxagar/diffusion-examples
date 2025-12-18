@@ -283,25 +283,42 @@ As shown in the notebook [`diffusers/diffusers_and_co.ipynb`](https://github.com
 Along this lines, I have implemented an [`inpainting_app`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers), which works as follows:
 
 - We can load an image, where we select points in a region we would like to segment: the foreground.
-- Then, the [Segment Anything Model (SAM) from Meta](https://huggingface.co/docs/transformers/en/model_doc/sam) is used to create a mask of that region of interest; the complementary is the background.
+- Then, the [Segment Anything Model (SAM) from Meta](https://huggingface.co/docs/transformers/en/model_doc/sam) is used to create a mask of that region of interest; the complementary is the background. SAM is a vision transformer which is able to segment different parts of an image out-of-the-box. However, it requires some input points or a bounding box to specify which region to segment.
 - Finally, we select either the foreground or the background region and run the in-painting version of [SDXL model](https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1); that way, the selected region is re-painted following the introduced prompt, but remaining consistent with the contents of the complementary region.
 
-That application makes use of [Gradio](https://www.gradio.app/), a python library similar to [Streamlit](https://streamlit.io/) which builds nice-looking, web-based GUIs. Gradio is developed by HuggingFace, making it the perfect choice for the models we are using. The library is really easy to use and I won't spend &mdash;
+Note as beforehand, that if plan to run the app locally you will need a [GPU setup with at least 12 GB of VRAM](https://mikelsagardia.io/blog/mac-os-ubuntu-nvidia-egpu.html) :sweat_smile:.
 
-[Gradio Quick Guide](https://github.com/mxagar/tool_guides/tree/master/gradio)
+That application makes use of [Gradio](https://www.gradio.app/), a python library similar to [Streamlit](https://streamlit.io/) which builds nice-looking, web-based GUIs. Gradio is developed by HuggingFace, making it the perfect choice for the models we are using. The library is really easy to use and I won't spend &mdash; if you are interested, you can check my [Gradio Quickstart Guide](https://github.com/mxagar/tool_guides/tree/master/gradio), which introduces all the necessary concepts and more.
 
+The structure is quite simple:
 
+- The GUI and the app structure are controlled by [`app.py`](https://github.com/mxagar/diffusion-examples/blob/main/inpainting_app/app.py). The entry point is `app.generate_app()`, which receives two functions:
+    - The function that segments an image given some selection points.
+    - The function which runs the inpainting of an image given a mask.
+- The notebook [`inpainting.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/inpainting_app/inpainting.ipynb) defines and prepares those input functions:
+    - `run_segmentation(raw_image, input_points, processor, model, ...) -> input_mask`
+    - `run_inpainting(raw_image, input_mask, prompt, pipeline, ...) -> generated_image`
+- Internally, `app.generate_app()` instantiates a `gradio.Blocks` object, which is composed by `gradio.Row()` sections that contain the UI widgets: image canvases, sliders, text boxes, buttons, etc. Those widgets are associated to callback functions that run the passed functions; for instance: when we select points in the uploaded `raw_image`, the callback `on_select()` is invoked, which under the hood executes `run_segmentation()` using the uploaded `raw_image` and the selected `input_points`.
+
+Of course, we can pack everything into modules, but the notebook serves as a nice playground to test different functionalities and models interactively.
+
+When we launch the application by invoking `app.generate_app()`, the user sees the following UI in `http://localhost:8080`:
+
+...
+
+So how does it perform? Let's see some examples!
 
 <p align="center">
 <img src="../inpainting_app/assets/monalisa_inpainting.png" alt="Monalisa In-Painting." width="1000"/>
 <small style="color:grey">
-Monalisa re-imagined. <a href="https://huggingface.co/docs/transformers/en/model_doc/sam">SAM</a> is used to segment foreground/background and <a href="https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1
-">Stable Diffusion XL Inpainting</a> to re-generated the selected region.
-Prompt (left): <i>A fantasy landscape with flying dragons (negative: artifacts, low quality, distortion).</i>
+Monalisa re-imagined. <a href="https://huggingface.co/docs/transformers/en/model_doc/sam">SAM (Segment Anything Model)</a> is used to segment foreground (green) & background (yellow), and <a href="https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1
+">Stable Diffusion XL Inpainting</a> to re-generate the selected region.
+Prompt (applied to the background): <i>A fantasy landscape with flying dragons (negative: artifacts, low quality, distortion).</i>
 </small>
 </p>
 
+Conclusions...
 
-## Conclusions
+## Wrapping Up
 
 :construction: TBD.
