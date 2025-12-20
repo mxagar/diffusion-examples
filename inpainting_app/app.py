@@ -1,3 +1,8 @@
+"""
+Gradio app for image inpainting with SAM + diffusion inpainting model.
+
+The original code is adapted from an example in the Udacity Generative AI Nanodegree program.
+"""
 from typing import Callable, Optional, Sequence, Tuple, List, Any
 import gradio as gr
 import numpy as np
