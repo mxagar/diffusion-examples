@@ -20,11 +20,11 @@ docker ps
 ---
 
 Blog Post 1  
-Title: An Introduction to Image Generation with Diffusers (1/2)  
+Title: An Introduction to Image Generation with Diffusion Models (1/2)  
 Subtitle: A Conceptual Guide for Developers & ML Practitioners
 
 Blog Post 2  
-Title: An Introduction to Image Generation with Diffusers (2/2)  
+Title: An Introduction to Image Generation with Diffusion Models (2/2)  
 Subtitle: Hands-On Examples with Hugging Face
 
 -->
@@ -44,16 +44,16 @@ But what truly feels like magic to me are image and video generation models.
 
 Driven by that fascination, I decided to write a short series of posts explaining how these models work, both in theory and in practice.
 
-In this first post, you will:
+In **this first post**, you will:
 
 - Learn how image *generation* differs from image *discrimination* (e.g., image classification).
 - Understand how *Diffusion* models compare to *Generative Adversarial Networks* (GANs) and *Variational Autoencoders* (VAEs).
 - Learn how *Denoising Diffusion Probabilistic Models* (DDPMs) work at both conceptual and mathematical levels.
 - See a full, minimal PyTorch implementation of a DDPM that generates car images using a consumer-grade GPU.
 
-In the [second post](#), I'll move on to practical examples using the Hugging Face libraries.
+In the [**second and final post**](https://mikelsagardia.io/posts/), I'll move on to practical examples using the Hugging Face libraries.
 
-Let’s get started.
+Let’s get started!
 
 <div style="height: 20px;"></div>
 <p align="center">── ◆ ──</p>
@@ -93,9 +93,9 @@ In terms of *ease of control*, generative models can be of two main types:
 
 - *Unconditional*, $p(x)$: These models learn the data distribution $p(x)$ and blindly create samples from it, without much control. You can check [these artificial faces](https://thispersondoesnotexist.com/), as an example.
 - *Conditional*, $p(x|\textrm{condition})$: They generate new samples conditioned on an input we provide, e.g., a class, a text prompt or an image.
-In the realm of the text modality, probably the most well-known generative model is OpenAI's [(Chat)GPT](#), which is able to produce words (tokens), and subsequently conversations, conditioned by a prompt or user instruction.
+In the realm of the text modality, probably the most well-known generative model is OpenAI's [(Chat)GPT](https://openai.com/index/chatgpt/), which is able to produce words (tokens), and subsequently conversations, conditioned by a prompt or user instruction.
 When it comes to the modality of images, it's difficult to point to a single winner, but common models are
-[Dall-E](#), [Midjourney](#), or [Stable Diffusion]([#](https://huggingface.co/spaces/google/sdxl)) &mdash; all of them are `text-to-image` conditional models.
+[Dall-E](https://openai.com/index/dall-e-3/), [Midjourney](https://www.midjourney.com/), or [Stable Diffusion](https://en.wikipedia.org/wiki/Stable_Diffusion) &mdash; all of them are `text-to-image` conditional models.
 
 In terms of the *modalities* they can work with, generative models can be:
 
@@ -117,13 +117,13 @@ There are three main families of generative approaches for image generation:
 - Generative Adversarial Networks (GANs)
 - Denoising Diffusion Probabilistic Models (Diffusers)
 
-[**Autoencoders**](#) are architectures that compress the input $x$ into a lower-dimensional latent vector $z$ and then they expand it again to try to recreate $x$. The compression side is called *encoder*, the middle layer which produces the latent vector is the *bottleneck*, and the expansion side is named the *decoder*. As mentioned, the final output $x'$ tries to approximate $x$ as closely as possible; the gradient of the reconstruction error is used to update the weights of all layers. Many types of layers and configurations can be used for the encoder & decoder parts; e.g., with images often [convolutional layers](#), [pooling](#), [dropout](#), and [batch normalization](#) are used to compress the image, whereas the expansion usually is implemented with [transpose convolutions](#).
+[**Autoencoders**](https://en.wikipedia.org/wiki/Autoencoder) are architectures that compress the input $x$ into a lower-dimensional latent vector $z$ and then they expand it again to try to recreate $x$. The compression side is called *encoder*, the middle layer which produces the latent vector is the *bottleneck*, and the expansion side is named the *decoder*. As mentioned, the final output $x'$ tries to approximate $x$ as closely as possible; the gradient of the reconstruction error is used to update the weights of all layers. Many types of layers and configurations can be used for the encoder & decoder parts; e.g., with images often [convolutional layers](https://en.wikipedia.org/wiki/Convolutional_layer), [pooling](https://en.wikipedia.org/wiki/Convolutional_neural_network), [dropout](https://arxiv.org/abs/1207.0580), and [batch normalization](https://en.wikipedia.org/wiki/Normalization_(machine_learning)) are used to compress the image, whereas the expansion usually is implemented with [transpose convolutions](https://d2l.ai/chapter_computer-vision/transposed-conv.html).
 
-[**Variational Autoencoders (VAEs)**](#) are autoencoders in which the elements of the latent $z$ vector are Gaussian distributions, i.e., for each latent element, they produce a mean and a variance, and then a value is sampled from that element distribution to produce the latent values. The practical effect is that VAEs produce latent spaces in which interpolation results in much smaller discontinuities than in non-variational autoencoders.
+[**Variational Autoencoders (VAEs)**](https://arxiv.org/abs/1312.6114) are autoencoders in which the elements of the latent $z$ vector are Gaussian distributions, i.e., for each latent element, they produce a mean and a variance, and then a value is sampled from that element distribution to produce the latent values. The practical effect is that VAEs produce latent spaces in which interpolation results in much smaller discontinuities than in non-variational autoencoders.
 
 VAEs have been typically implemented for compression, denoising and anomaly detection; even though they can generate new samples using only their decoder, they usually produce less realistic results. However, they are fundamental to understand generative models, since they intuitively introduce many of the concepts later revisited by subsequent approaches. If you want to check some examples, have a look at [A](#), [B](#), [C](#).
 
-[**Generative Adversarial Networks (GANs)**](#) were presented by Goodfellow et al. in 2014 and they represented a significant advancement in realistic image generation. They have two components: a *generator* (decoder-like) and a *discriminator* (encoder-like), but they are arranged and trained differently, as shown in the figure below.
+[**Generative Adversarial Networks (GANs)**](https://arxiv.org/abs/1406.2661) were presented by Goodfellow et al. in 2014 and they represented a significant advancement in realistic image generation. They have two components: a *generator* (decoder-like) and a *discriminator* (encoder-like), but they are arranged and trained differently, as shown in the figure below.
 
 The *generator* $G$ tries to generate realistic images as if they belonged to the real data distribution, starting with latent vector $z$ expanded from a noise seed. On the other hand, the *discriminator* $D$ tries to determine whether an image $x$ is real or fake (i.e., generated: $x' = G(z)$). Usually, $D$ and $G$ have mirrored architectures and their layers are equivalent to the ones used in VAEs.
 
@@ -135,7 +135,7 @@ The training phase looks as follows:
 
 Once the model is trained, the inference is done with the generator $G$ alone.
 
-GANs are notoriously difficult to train, [due to several factors](#) that are out of the scope of this blog post. Fortunately, [guidelines](#) which aid the training process have been proposed. Also, method improvements have been presented, such as the [Wasserstein GAN with Gradient Penalty](#), which alleviates the major training difficulties, and [conditional GANs](#), which provide control to the user during generation (e.g., create male or female faces).
+GANs are notoriously difficult to train, [due to several factors](https://github.com/soumith/ganhacks) that are out of the scope of this blog post. Fortunately, [guidelines](https://arxiv.org/abs/1606.03498) which aid the training process have been proposed. Also, method improvements have been presented, such as the [Wasserstein GAN with Gradient Penalty](https://arxiv.org/abs/1704.00028), which alleviates the major training difficulties, and [conditional GANs](https://arxiv.org/abs/1411.1784), which provide control to the user during generation (e.g., create male or female faces).
 
 <p align="center">
 <img src="../assets/vae_and_gan.png" alt="VAEs and GANs" width="1000"/>
@@ -175,7 +175,7 @@ To answer that question, we need to consider that generative models are usually 
 - **Coverage**: this measures how diverse the captured distributions are, i.e., the number of modes or peaks in the learned distribution; for instance, in a dataset of dog images, we would expect as many dog breeds as possible, which would be represented as many dense regions differentiable from each other. VAEs and Diffusers have good coverage, whereas GANs tend to deliver less diverse results.
 - **Speed**: this refers to the sampling speed, i.e., how fast we can create new images. GANs and VAEs are the fastest approaches, while Diffusers require longer computation times.
 
-As we can see, there seems to be no all-powerful method that wins in all three metrics. However, [Rombach et al. (2021)](https://arxiv.org/abs/2112.10752) and [Podell et al. ( 2023)](https://arxiv.org/abs/2307.01952) presented and improved the **Stable Diffusion** approach, which is a very good trade-off (arguably the best so far). This method applies diffusion, but in the latent space, achieving much faster speed values &mdash; I explain more about it in the next section.
+As we can see, there seems to be no all-powerful method that wins in all three metrics. However, [Rombach et al. (2021)](https://arxiv.org/abs/2112.10752) and [Podell et al. (2023)](https://arxiv.org/abs/2307.01952) presented and improved the **Stable Diffusion** approach, which is a very good trade-off (arguably the best so far). This method applies diffusion, but in the latent space, achieving much faster speed values &mdash; I explain more about it in the next section.
 
 <p align="center">
 <img src="../assets/impossible_triangle.png" alt="Impossible Triangle" width="1000"/>
@@ -297,7 +297,7 @@ The most common form of **conditioning** is done with *text*: we provide a promp
 - During *training*, we inject the embedding vector into different layers of the *U-Net* using cross attention, reinforcing the conditioning. Additionally, we remove the text conditioning in some random steps so that the model learns unconditional generation.
 - During *inference*, the *U-Net* produces the noise map $\epsilon$ with and without text conditioning: $\epsilon_{\textrm{cond}}, \epsilon_{\textrm{uncond}}$. The difference added by the conditioned noise map is amplified (by a factor $\lambda$) to push the final prediction in the direction of the conditioning; mathematically, considering $\epsilon$ is a vector/tensor, this is expressed (and implemented) as follows:
 
-  $\epsilon_{\textrm{final}} = \epsilon_{\textrm{uncond}} + \lambda *(\epsilon_{\textrm{cond}} - \epsilon_{\textrm{uncond}})$
+  $\epsilon_{\textrm{final}} = \epsilon_{\textrm{uncond}} + \lambda \cdot (\epsilon_{\textrm{cond}} - \epsilon_{\textrm{uncond}})$
 
 Thanks to these modifications, we are able to obtain our red sports car instead of a green truck.
 
@@ -394,7 +394,7 @@ Diffusion models have become the standard approach for image generation by combi
 
 This post focused on building intuition and connecting theory to practice through a minimal DDPM implementation. While the underlying math is rather simple, I still find it fascinating that such models can learn a representation of images rich enough to generate entirely new samples from pure noise &mdash; it often feels a bit like magic.
 
-If you want to deepen your understanding, the best next step is to [run the notebook yourself](#), visualize the diffusion process, and experiment with the model's components. Small changes in schedules, architectures, or datasets can lead to very different behaviors.
+If you want to deepen your understanding, the best next step is to [run the notebook yourself](https://github.com/mxagar/diffusion-examples/blob/main/ddpm/ddpm.ipynb), visualize the diffusion process, and experiment with the model's components. Small changes in schedules, architectures, or datasets can lead to very different behaviors.
 
-[In the next post](#), I'll move toward more practical diffusion workflows using Hugging Face Diffusers and modern text-to-image models. As always, comments, questions, and suggestions are more than welcome :)
+[In the next post](https://mikelsagardia.io/posts/), I'll move toward more practical diffusion workflows using Hugging Face Diffusers and modern text-to-image models. As always, comments, questions, and suggestions are more than welcome :)
 
