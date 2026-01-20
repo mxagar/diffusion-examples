@@ -39,17 +39,27 @@ Also, you can find the accompanying code <a href="https://github.com/mxagar/diff
 </div>
 <div style="height: 30px;"></div>
 
-In the present post you will:
+I still find it fascinating that machine learning models are able to learn from examples, even after working with them for more than a decade.  
+But what truly feels like magic to me are image and video generation models.
 
-- Learn how image *generation* works in contrast to image *discrimination* (e.g., image classification).
-- Understand how *Diffusion* models differ from *Generative Adversarial Networks* (GANs) and *Variational Autoencoders* (VAEs).
+Driven by that fascination, I decided to write a short series of posts explaining how these models work, both in theory and in practice.
+
+In this first post, you will:
+
+- Learn how image *generation* differs from image *discrimination* (e.g., image classification).
+- Understand how *Diffusion* models compare to *Generative Adversarial Networks* (GANs) and *Variational Autoencoders* (VAEs).
 - Learn how *Denoising Diffusion Probabilistic Models* (DDPMs) work at both conceptual and mathematical levels.
-- See a full, minimal PyTorch implementation of a DDPM which generates car images using a consumer-grade graphics card.
+- See a full, minimal PyTorch implementation of a DDPM that generates car images using a consumer-grade GPU.
+
+In the [second post](#), I'll move on to practical examples using the Hugging Face libraries.
+
+Let’s get started.
 
 <div style="height: 20px;"></div>
 <p align="center">── ◆ ──</p>
 <div style="height: 20px;"></div>
 
+In machine learning, any sample or data instance can be represented as feature vector $x$.
 These features could be the RGB values of an image's pixels or the words (tokens) of a text represented as vocabulary indices.
 In deep learning, these vectors are often transformed into *embeddings* or *latent* vectors, which are compressed representations that still retain differentiable semantic meaning.
 
