@@ -2,7 +2,7 @@
 
 This mini-project implements and trains a [**Denoising Diffusion Probabilistic Model (Ho et al., 2020)**](https://arxiv.org/abs/2006.11239).
 
-For a technical introduction in image generation and diffusers, check my [blog post on that topic](https://mikelsagardia.io).
+For a technical introduction in image generation and diffusers, check my [blog post on that topic](https://mikelsagardia.io/blog/diffusion-for-developers.html).
 
 The folder contains two files:
 

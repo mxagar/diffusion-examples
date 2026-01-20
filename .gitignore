@@ -212,3 +212,4 @@ data
 
 # Hidden
 .vscode
+.DS_Store
