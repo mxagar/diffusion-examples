@@ -316,32 +316,32 @@ Stable Diffusion is one of the most popular latent diffusion models; due to the 
 
 #### Example Implementation of DDPM
 
-The implementation [repository](https://github.com/mxagar/diffusion-examples/tree/main/ddpm) contains the code necessary to train a diffuser and use it o generate new images.
+The implementation [repository](https://github.com/mxagar/diffusion-examples/tree/main/ddpm) contains the code necessary to train a diffuser and use it to generate new images.
 
-The dataset used in the example is the [Stanford Cars Dataset](https://www.kaggle.com/datasets/eduardo4jesus/stanford-cars-dataset). It contains 16,185 color images categorized in 196 classes, which are resized to `64x64` .
+The dataset used in the example is the [Stanford Cars Dataset](https://www.kaggle.com/datasets/eduardo4jesus/stanford-cars-dataset). It contains 16,185 color images categorized into 196 classes, which are resized to `64x64`.
 
 <p align="center">
 <img src="../assets/cars_dataset_samples.png" alt="Cars Dataset Samples" width="1000"/>
 <small style="color:grey">
 In the example implementation, the <a href="https://www.kaggle.com/datasets/eduardo4jesus/stanford-cars-dataset">Stanford Cars Dataset</a> is used.
-The dataset consists on 16,185 color images and 196 classes; however, class labels are ignored and the images are resized to be <code>64x64</code> pixels.
+The dataset consists of 16,185 color images across 196 classes; however, class labels are ignored and the images are resized to <code>64x64</code> pixels.
 The figure shows 8 resized samples.
 </small>
 </p>
 
-The mini-project is composed by two main files:
+The mini-project is composed of two main files:
 
-- The module [`unet.py`](https://github.com/mxagar/diffusion-examples/blob/main/ddpm/unet.py), taken from [labmlai/annotated_deep_learning_paper_implementations](https://github.com/labmlai/annotated_deep_learning_paper_implementations). This module defines the *U-Net* model which is able to predict the noise of an image, after trained.
-- The notebook [`ddpm.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/ddpm/ddpm.ipynb), where the entire dataset and model preparation, as well as the training, are implemented. Some parts were modified from the course material of the [Udacity Generative AI Nanodegree](https://www.udacity.com/course/generative-ai--nd608).
+- The module [`unet.py`](https://github.com/mxagar/diffusion-examples/blob/main/ddpm/unet.py), taken from [labmlai/annotated_deep_learning_paper_implementations](https://github.com/labmlai/annotated_deep_learning_paper_implementations). This module defines the *U-Net* model which is able to predict the noise of an image after training.
+- The notebook [`ddpm.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/ddpm/ddpm.ipynb), where the dataset preparation, model setup, and training are implemented. Some parts were modified from the course material of the [Udacity Generative AI Nanodegree](https://www.udacity.com/course/generative-ai--nd608).
 
 The formulas of the DDPM paper, as well as the forward and reverse diffusion algorithms, are implemented in a modular fashion and with plenty of comments and references.
 
-Exemplarily, the function `visualize_forward_diffusion()` produces these noisy images on a single car sample:
+As an example, the function `visualize_forward_diffusion()` produces these noisy images on a single car sample:
 
 <p align="center">
 <img src="../assets/cars_forward_diffusion.png" alt="Forward Diffusion on Car Sample" width="1000"/>
 <small style="color:grey">
-A total of <code>T=512</code> steps are taken to iterative add noise to a sample and train the <i>U-Net</i> to predict the added noise map. The figure shows 7 equally spaced stages of those steps.
+A total of <code>T=512</code> steps are taken to iteratively add noise to a sample and train the <i>U-Net</i> to predict the added noise map. The figure shows 7 equally spaced stages of those steps.
 </small>
 </p>
 
@@ -354,7 +354,7 @@ I trained a *U-Net* model of 54 million parameters using the following configura
 - `T=512` diffusion steps
 - A linearly increased noise variance $\beta$ in the range of `[0.0001, 0.02]`
 
-The training process, run by `train()`, produces an iterative denoised image strip every epoch which is generated from the same fixed noise map. In the following, the image strips of epochs 1, 5, 10, 100, 200 and 300 are shown.
+The training process, run by `train()`, produces a denoised image strip at every epoch, generated from the same fixed noise map. In the following, the image strips of epochs 1, 5, 10, 100, 200 and 300 are shown.
 
 <p align="center">
 <img src="../assets/car_sample_epoch_001.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
@@ -365,11 +365,11 @@ The training process, run by `train()`, produces an iterative denoised image str
 <img src="../assets/car_sample_epoch_300.png" alt="Inference at Epoch 1: Reverse Diffusion on Car Sample" width="1000"/>
 <small style="color:grey">
 Inference or reverse diffusion during training; the performance for the same noise input is shown for epochs 1, 5, 10, 100, 200 and 300 (last epoch).
-A total of <code>T=512</code> steps are taken to iterative remove noise. The figures show 9 equally spaced stages of those steps at each epoch.
+A total of <code>T=512</code> steps are taken to iteratively remove noise. The figures show 9 equally spaced stages of those steps at each epoch.
 </small>
 </p>
 
-The final model is able to generate new samples as the following:
+The final model is able to generate new samples, as shown below:
 
 <p align="center">
 <img src="../assets/car_generation_best_model.png" alt="Eight Samples Generated by a DDPM" width="1000"/>
@@ -378,8 +378,13 @@ Eight generated samples after 300 epochs of training.
 </small>
 </p>
 
+## Wrap Up
 
+Diffusion models have become the standard approach for image generation by combining high-quality samples, good coverage, and relatively stable training. By framing generation as a gradual denoising process, DDPMs avoid many of the pitfalls of earlier generative models while remaining surprisingly intuitive.
 
-## Conclusions
+This post focused on building intuition and connecting theory to practice through a minimal DDPM implementation. While the underlying math is rather simple, I still find it fascinating that such models can learn a representation of images rich enough to generate entirely new samples from pure noise &mdash; it often feels a bit like magic.
 
-:construction: TBD.
+If you want to deepen your understanding, the best next step is to [run the notebook yourself](#), visualize the diffusion process, and experiment with the model's components. Small changes in schedules, architectures, or datasets can lead to very different behaviors.
+
+[In the next post](#), I'll move toward more practical diffusion workflows using Hugging Face Diffusers and modern text-to-image models. As always, comments, questions, and suggestions are more than welcome :)
+
