@@ -29,7 +29,7 @@ Subtitle: Hands-On Examples with Hugging Face
 <p align="center">
 <img src="../assets/ai_drawing_ai_dallev3.png" alt="An AI drawing an AI drawing an AI. Image generated using Dalle-E 3" width="1000"/>
 <small style="color:grey">An AI drawing an AI drawing an AI... Image generated using 
-<a href="https://openai.com/index/dall-e-3/">Dall-E v3</a>. Prompt: <i>A friendly humanoid robot sits at a wooden table in a bright, sunlit room, happily drawing on a sketchbook. Soft light colors, landscape, peaceful, productive, and joyful atmosphere. The robot is drawing an image of itself drawing, creating a recursive effect. Large window in the background with greenery outside, warm natural lighting.</i>
+<a href="https://openai.com/index/dall-e-3/">Dall-E 3</a>. Prompt: <i>A friendly humanoid robot sits at a wooden table in a bright, sunlit room, happily drawing on a sketchbook. Soft light colors, landscape, peaceful, productive, and joyful atmosphere. The robot is drawing an image of itself drawing, creating a recursive effect. Large window in the background with greenery outside, warm natural lighting.</i>
 </small>
 </p>
 
@@ -166,7 +166,7 @@ This brief overview barely scratches the surface of the HuggingFace ecosystem. I
 
 If you'd like to explore further, here are some additional resources:
 
-- My [guide on HuggingFace](https://github.com/mxagar/tool_guides/tree/master/hugging_face), which covers topics such as:
+- [My guide on HuggingFace](https://github.com/mxagar/tool_guides/tree/master/hugging_face), which covers topics such as:
     - Combining models with Pytorch/Tensorflow code.
     - More complex pre- and post-processing steps for each task/modality, e.g.: tokenization, encoding, etc.
     - Fine-tuning pretrained models for different tasks by adding cutom heads. 
@@ -346,8 +346,25 @@ Prompt (applied to the background): <i>A fantasy landscape with flying dragons (
 </small>
 </p>
 
-Conclusions...
+I think that the result shows that the pipeline produces a visually coherent image: the new background blends naturally with the original painting's lighting, perspective, and color palette.
+Despite the strong semantic change introduced by the prompt, the Mona Lisa remains intact and consistent, which highlights how well segmentation and diffusion-based in-painting can work together even in artistic, non-photographic domains.
 
 ## Wrap Up
 
-:construction: TBD.
+In this second post, we moved from theory to practice and explored how modern diffusion models can be used out of the box with [HuggingFace](https://huggingface.co/) tools. I covered how to run state-of-the-art `text-to-image` models with diffusers, how different diffusion architectures trade off speed and quality, and how combining models enables more powerful workflows such as segmentation-aware in-painting.
+
+Beyond individual examples, the main takeaway is how composable today's generative models have become. By chaining pretrained components—segmentation, conditioning, and diffusion—we can quickly prototype creative and practical applications without training models from scratch.
+
+If you want to dig deeper, here are some useful starting points:
+
+- 👉 [Conceptual background on diffusion models (Part 1 of this series)](https://mikelsagardia.io/blog/diffusion-for-developers.html)
+
+- 👉 [Code for this post (Diffusers examples)](https://github.com/mxagar/diffusion-examples/tree/main/diffusers)
+
+- 👉 [In-painting application (SAM + SDXL)](https://github.com/mxagar/diffusion-examples/tree/main/inpainting_app)
+
+- 👉 [My guide on HuggingFace](https://github.com/mxagar/tool_guides/tree/master/hugging_face)
+
+I'm curious to hear your thoughts:
+
+> What real-world or creative use case do you think would benefit most from this kind of segmentation-guided in-painting app? Do you know some businesses using similar pipelines?
