@@ -2,11 +2,11 @@
 
 This repository contains some example applications in which diffusion-based image generation models are used.
 
-Each example/subproject is independent; specific sources, necessary packages, setup & Co. are explained inside each subproject folder.
+Each example/subproject is independent; specific (re-)sources & Co. are explained inside each subproject folder.
 
-- [`ddpm/`](./ddpm/README.md)
-- [`diffusers/`](./diffusers/README.md)
-- [`inpainting_app/`](./inpainting_app/README.md)
+- [`ddpm/`](./ddpm/README.md): Training a Denoising Diffusion Probabilistic Model from Scratch
+- [`diffusers/`](./diffusers/README.md): Practical Image Generation Examples with HuggingFace Diffusers
+- [`inpainting_app/`](./inpainting_app/README.md): Segementation-Aware In-Painting Application
 
 See the related blog posts for more context:
 
