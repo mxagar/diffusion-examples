@@ -102,6 +102,8 @@ Models can be browsed and selected directly from the HuggingFace website, where 
 
 If we click on a model we will land on its **model card** page, which typically includes evaluation metrics, references, licensing information, and often a short code snippet showing how to load and run the model.
 
+### Pipelines
+
 The easiest way to run inference with most HuggingFace models is through the `pipeline` interface. While each task has its own specifics, the overall pattern is remarkably consistent. As an example, here's how a `text-generation` pipeline looks:
 
 ```python
@@ -158,6 +160,8 @@ image = pipe(
 image.save("example.png")
 ```
 
+### More Information on the HuggingFace Ecosystem
+
 This brief overview barely scratches the surface of the HuggingFace ecosystem. In the next sections, I'll focus on concrete, ready-to-use examples that build directly on these ideas.
 
 If you'd like to explore further, here are some additional resources:
@@ -180,6 +184,8 @@ Let's now move from concepts to code and run a few concrete examples using the `
 In this post, I'll focus on showing and discussing the results produced by different models. If you want to see the full (and commented) code, I recommend opening the notebook alongside the article.
 
 > :warning: **Harware note**: To run the notebook locally, you'll need a [GPU setup with at least 12 GB of VRAM](https://mikelsagardia.io/blog/mac-os-ubuntu-nvidia-egpu.html). As an alternative, you can use a [Google Colab instance](https://colab.research.google.com/) with a NVIDIA T4, or similar.
+
+### Stable Diffusion XL Turbo
 
 The first example in the notebook covers a *conditioned* image generation task, specifically `text-to-image`, using the [Stable Diffusion XL Turbo](https://huggingface.co/stabilityai/sdxl-turbo) model. The code closely follows the patterns introduced in the previous section:
 
@@ -233,6 +239,8 @@ This speedup is achieved through [Adversarial Diffusion Distillation (ADD)](http
 
 In short, a large model is distilled into a much faster one, enabling real-time image generation in creative tools and user interfaces.
 
+### Playground V2
+
 An interesting alternative to SDXL Turbo is [Playground V2](https://huggingface.co/playgroundai/playground-v2-1024px-aesthetic). This model also targets high-quality image generation with fewer inference steps, but it takes a different approach: it prioritizes visual quality and aesthetics and it does not rely on distillation during training. Using the same prompt, Playground V2 produces a different output:
 
 <p align="center">
@@ -242,6 +250,8 @@ Model: <a href="https://huggingface.co/playgroundai/playground-v2-1024px-aesthet
 Same prompt ad before: <i>A friendly humanoid robot sits at a wooden table...</i>
 </small>
 </p>
+
+### Combining Models
 
 Diffusion models don't have to be used in isolation &mdash; they can also be chained together! In the next example, SDXL Turbo first generates an image of a puppy. That image is then used as conditioning input for the `image-to-image` model [Kandinsky 2.2](https://huggingface.co/kandinsky-community/kandinsky-2-2-prior). The result is an exaggerated image of a dog, but I think it showcases the potential of building such compositional pipelines.
 
@@ -283,31 +293,40 @@ Check <a href="https://www.bbc.com/news/uk-england-bristol-52382500">this piece 
 
 ## Building Proof-of-Concept Applications: Zero-Shot Segmentation and In-Painting
 
-As shown in the notebook [`diffusers/diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb), it is very simple to run different models for different isolated tasks. That brings us to the next logical question: *what if we combine different models to build small apps?*
+As shown in the notebook [`diffusers/diffusers_and_co.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers/diffusers_and_co.ipynb), running different models for isolated tasks is already quite straightforward. This naturally leads to the next question:
 
-Along these lines, I have implemented an [`inpainting_app`](https://github.com/mxagar/diffusion-examples/blob/main/diffusers), which works as follows:
+> What if we combine several models to build small, interactive applications?
 
-- We can load an image, where we select points in a region we would like to segment: the foreground.
-- Then, the [Segment Anything Model (SAM) from Meta](https://huggingface.co/docs/transformers/en/model_doc/sam) is used to create a mask of that region of interest; everything else is background. SAM is a vision transformer which is able to segment different parts of an image out-of-the-box. However, it requires some input points or a bounding box to specify which region to segment.
-- Finally, we select either the foreground or the background region and run the in-painting version of [SDXL model](https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1); that way, the selected region is re-painted following the introduced prompt, but remaining consistent with the contents of the complementary region.
+Along these lines, I implemented a simple proof-of-concept: [`inpainting_app`](https://github.com/mxagar/diffusion-examples/tree/main/inpainting_app). The idea behind it is to chain **segmentation** and **diffusion-based in-painting** into a single workflow:
 
-Note that, as before, if you plan to run the app locally you will need a [GPU setup with at least 12 GB of VRAM](https://mikelsagardia.io/blog/mac-os-ubuntu-nvidia-egpu.html) :sweat_smile:.
+- First, we load an image and select a few points on the region we want to modify (typically the foreground).
+- Next, the [Segment Anything Model (SAM) from Meta](https://huggingface.co/docs/transformers/en/model_doc/sam) generates a segmentation mask for that region. Everything outside the mask is treated as background.
+SAM is a vision transformer capable of zero-shot segmentation, but it still requires some minimal guidance (points or a bounding box) to specify the region of interest.
+- Finally, we select either the foreground or the background region and run the in-painting version of [SDXL model](https://huggingface.co/diffusers/stable-diffusion-xl-1.0-inpainting-0.1). The selected region is regenerated according to a text prompt, while remaining visually consistent with the rest of the image.
 
-That application makes use of [Gradio](https://www.gradio.app/), a Python library similar to [Streamlit](https://streamlit.io/) which builds nice-looking, web-based GUIs. Gradio is developed by HuggingFace, making it the perfect choice for the models we are using. The library is really easy to use and I won't spend &mdash; if you are interested, you can check my [Gradio Quickstart Guide](https://github.com/mxagar/tool_guides/tree/master/gradio), which introduces all the necessary concepts and more.
+As before, if you plan to run the app locally you'll need a [GPU setup with at least 12 GB of VRAM](https://mikelsagardia.io/blog/mac-os-ubuntu-nvidia-egpu.html) :sweat_smile:.
 
-The structure is quite simple:
+### UI and Application Structure
 
-- The GUI and the app structure are controlled by [`app.py`](https://github.com/mxagar/diffusion-examples/blob/main/inpainting_app/app.py). The entry point is `app.generate_app()`, which receives two functions:
-    - The function that segments an image given some selection points.
-    - The function which runs the inpainting of an image given a mask.
+The application is built using [Gradio](https://www.gradio.app/), a Python library similar to [Streamlit](https://streamlit.io/) which builds nice-looking, web-based GUIs. Since Gradio is developed by HuggingFace, it integrates seamlessly with the models used here.
+
+If you want a deeper introduction to Gradio, you can check my [Gradio Quickstart Guide](https://github.com/mxagar/tool_guides/tree/master/gradio), where I cover the basics and several advanced patterns.
+
+The structure of the app is intentionally simple:
+
+- The GUI and the app structure are controlled by [`app.py`](https://github.com/mxagar/diffusion-examples/blob/main/inpainting_app/app.py). The entry point is `app.generate_app()`, which takes two functions as inputs:
+    - a function that performs image segmentation given a set of user-selected points,
+    - and a function that runs in-painting given an image, a mask, and a prompt.
 - The notebook [`inpainting.ipynb`](https://github.com/mxagar/diffusion-examples/blob/main/inpainting_app/inpainting.ipynb) defines and prepares those input functions:
     - `run_segmentation(raw_image, input_points, processor, model, ...) -> input_mask`
     - `run_inpainting(raw_image, input_mask, prompt, pipeline, ...) -> generated_image`
-- Internally, `app.generate_app()` instantiates a `gradio.Blocks` object, which is composed by `gradio.Row()` sections that contain the UI widgets: image canvases, sliders, text boxes, buttons, etc. Those widgets are associated to callback functions that run the passed functions; for instance: when we select points in the uploaded `raw_image`, the callback `on_select()` is invoked, which under the hood executes `run_segmentation()` using the uploaded `raw_image` and the selected `input_points`.
+- Internally, `app.generate_app()` creates a `gradio.Blocks` layout, which is composed of `gradio.Row()` sections that contain the UI widgets: image canvases, sliders, text boxes, buttons, etc. These widgets are connected to callback functions; for instance: when we select points in the uploaded `raw_image`, the callback `on_select()` is invoked, which under the hood executes `run_segmentation()` using the uploaded `raw_image` and the selected `input_points`.
 
-Of course, we can pack everything into modules, but the notebook serves as a nice playground to test different functionalities and models interactively.
+While everything could be packaged into standalone modules, keeping part of the logic in a notebook makes experimentation much easier and encourages rapid iteration.
 
-When we launch the application by invoking `app.generate_app()`, the user sees the following UI in `http://localhost:8080`:
+### The Result
+
+When the application is launched via `app.generate_app()`, the user sees the following UI in `http://localhost:8080`:
 
 <p align="center">
 <img src="../inpainting_app/assets/app_gui.png" alt="App GUI." width="1000"/>
@@ -316,7 +335,7 @@ The Graphical User Interface (GUI) or our application.
 </small>
 </p>
 
-So how does it perform? Let's see some examples!
+So how does it perform? Let's look at an example.
 
 <p align="center">
 <img src="../inpainting_app/assets/monalisa_inpainting.png" alt="Monalisa In-Painting." width="1000"/>
@@ -329,6 +348,6 @@ Prompt (applied to the background): <i>A fantasy landscape with flying dragons (
 
 Conclusions...
 
-## Wrapping Up
+## Wrap Up
 
 :construction: TBD.
