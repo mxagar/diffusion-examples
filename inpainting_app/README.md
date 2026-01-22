@@ -30,9 +30,9 @@ The notebook serves as a playground and reference implementation, while `app.py`
 - User input
     - Upload an image
     - Select points indicating the region of interest (foreground or background)
-- Segmentation is run: The [Segment Anything Model (SAM)](https://huggingface.co/docs/transformers/v4.41.1/model_doc/sam) generates a binary mask based on the selected points
+- Segmentation is run: The [Segment Anything Model (SAM)](https://huggingface.co/docs/transformers/main/model_doc/sam) generates a binary mask based on the selected points
 - In-painting
-    - A [Stable Diffusion XL in-painting pipeline](https://huggingface.co/docs/diffusers/v0.22.1/api/pipelines/stable_diffusion/inpaint) re-generates the selected region
+    - A [Stable Diffusion XL in-painting pipeline](https://huggingface.co/docs/diffusers/main/api/pipelines/stable_diffusion/inpaint) re-generates the selected region
     - The unmasked region is preserved to maintain spatial and semantic consistency
 - Interactive output: Results are displayed instantly in the browser via Gradio
 
