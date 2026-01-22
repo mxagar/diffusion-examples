@@ -8,6 +8,11 @@ Each example/subproject is independent; specific sources, necessary packages, se
 - [`diffusers/`](./diffusers/README.md)
 - [`inpainting_app/`](./inpainting_app/README.md)
 
+See the related blog posts for more context:
+
+- [An Introduction to Image Generation with Diffusion Models (1/2): A Conceptual Guide for Developers & ML Practitioners](https://mikelsagardia.io/blog/diffusion-for-developers.html)
+- [An Introduction to Image Generation with Diffusion Models (2/2): Hands-On Examples with HuggingFace](https://mikelsagardia.io/blog/diffusion-hands-on.html)
+
 ## Setup
 
 In the following, I provide a recipe to set up a [conda](https://docs.conda.io/en/latest/) environment with the necessary packages. Note that a GPU (with at least 12 GB or memory) is required to train and/or using the models.
@@ -38,7 +43,7 @@ pip install -r requirements.txt
 For these examples, I used 
 
 - a Lenovo ThinkPad P14s Gen 2i running Ubuntu 25.04
-- and a GeForce NVIDIA RTX 3060 (12 GB) with CUDA driver version 580 and toolkit version 13.0.
+- and a [GeForce NVIDIA RTX 3060 (12 GB)](https://mikelsagardia.io/blog/mac-os-ubuntu-nvidia-egpu.html) with CUDA driver version 580 and toolkit version 13.0.
 
 ## Related Resources
 
