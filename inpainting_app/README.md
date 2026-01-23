@@ -8,7 +8,7 @@ For a technical introduction in image generation and diffusers, check these asso
 - [Image Generation: A Conceptual Guide for Developers and ML Practitioners](https://mikelsagardia.io/blog/diffusion-for-developers.html)
 - [Image Generation: Hands-On Examples with HuggingFace](https://mikelsagardia.io/blog/diffusion-hands-on.html)
 
-For an environment setup, check the [`../README.md`](../README.md) in the folder above.
+For environment setup instructions (Python, CUDA, dependencies), check the [`../README.md`](../README.md) in the parent folder.
 
 The folder contains two files:
 
